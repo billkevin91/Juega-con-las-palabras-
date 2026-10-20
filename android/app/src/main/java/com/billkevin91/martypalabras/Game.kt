@@ -79,7 +79,7 @@ class Game(context: Context) {
         who = w
     }
 
-    fun setMood(m: Mood) {
+    fun react(m: Mood) {
         mood = m
         moodTick++
     }
@@ -95,7 +95,7 @@ class Game(context: Context) {
         session = null
         speech.stop()
         title = "Marty y las Palabras"
-        setMood(Mood.NONE)
+        react(Mood.NONE)
         say(
             if (save.name.isNotEmpty()) "¡Hola, ${save.name}! ¿A qué planeta vamos hoy?"
             else "¡Bienvenido al concurso galáctico! ¡Soy Marty, tu presentador! ¡Vamos, vamos, vamos!"
@@ -106,7 +106,7 @@ class Game(context: Context) {
     fun picker() {
         session = null
         title = "Astroaventura"
-        setMood(Mood.NONE)
+        react(Mood.NONE)
         say("Elige un planeta. Aquí no hay prisa: practica lo que quieras.")
         screen = Screen.Picker
     }
@@ -124,7 +124,7 @@ class Game(context: Context) {
         run.clear()
         if (save.name.isNotEmpty()) return retoIntro(0)
         title = "Antes de despegar"
-        setMood(Mood.NONE)
+        react(Mood.NONE)
         say("¿Cómo te llamas, astronauta? Tu nombre irá en el diploma.")
         screen = Screen.Name
     }
@@ -138,14 +138,14 @@ class Game(context: Context) {
         val k = RETO[pi]
         session = null
         title = "Planeta ${pi + 1} de 4"
-        setMood(Mood.NONE)
+        react(Mood.NONE)
         say("Llegamos a ${planet(k).name}. ${INTRO[k]}")
         screen = Screen.Intro(pi)
     }
 
     fun diploma() {
         title = "¡Diploma galáctico!"
-        setMood(Mood.HAPPY)
+        react(Mood.HAPPY)
         tone(523, 659, 784, 1046)
         say("¡Lo lograste, ${save.name}! Superaste los cuatro planetas.")
         screen = Screen.Diploma
@@ -165,7 +165,7 @@ class Game(context: Context) {
         val s = session ?: return
         s.tried = false
         s.locked = false
-        setMood(Mood.NONE)
+        react(Mood.NONE)
         title = planet(s.k).name
     }
 
@@ -177,7 +177,7 @@ class Game(context: Context) {
         val s = session ?: return
         s.tried = true
         tone(200, 150)
-        setMood(Mood.SAD)
+        react(Mood.SAD)
         say("¡Casi! Prueba otra vez.")
     }
 
@@ -186,7 +186,7 @@ class Game(context: Context) {
         if (s.locked) return
         s.locked = true
         if (credit) s.ok++
-        setMood(Mood.HAPPY)
+        react(Mood.HAPPY)
         tone(523, 659, 784)
         if (!quiet) speak(s.word.text)
         say(listOf("¡Muy bien!", "¡Excelente!", "¡Lo lograste!", "¡Qué listo eres!", "¡Genial!").random() + " " + s.word.text)
@@ -220,7 +220,7 @@ class Game(context: Context) {
             if (st > save.best(k)) save.setBest(k, st)
         }
         if (reto && pass) run[k] = st
-        setMood(if (pass) Mood.HAPPY else Mood.SAD)
+        react(if (pass) Mood.HAPPY else Mood.SAD)
         if (pass) tone(523, 659, 784, 1046) else tone(300, 260)
         val name = planet(k).name
         say(
@@ -251,7 +251,7 @@ class Game(context: Context) {
     fun attack() {
         session = null
         title = "Ataque de las palabras"
-        setMood(Mood.NONE)
+        react(Mood.NONE)
         say("¡Jajaja! Voy a ensuciar todas las palabras. ¡A ver si las escribes bien!", Who.BORRON)
         screen = Screen.Attack
     }
@@ -260,7 +260,7 @@ class Game(context: Context) {
         if (screen != Screen.Attack) return
         val rec = score > save.attack
         if (rec) save.attack = score
-        setMood(if (ok >= 7) Mood.SAD else Mood.HAPPY)
+        react(if (ok >= 7) Mood.SAD else Mood.HAPPY)
         if (ok >= 7) tone(523, 659, 784) else tone(300, 260)
         say(if (ok >= 7) "¡Me ganaste! Escribes muy bien." else "¡Jajaja! Esta vez gané yo. ¿Revancha?", Who.BORRON)
         screen = Screen.AttackEnd(score, ok, rec)
