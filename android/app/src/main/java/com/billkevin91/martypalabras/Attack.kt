@@ -10,7 +10,6 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
-import androidx.compose.foundation.layout.matchParentSize
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
@@ -37,7 +36,7 @@ import kotlin.math.sin
 import kotlin.random.Random
 
 /** Mancha de tinta de Borrón: posición en % de la tarjeta y tamaño en dp. */
-private data class Ink(val l: Float, val t: Float, val s: Float)
+private data class InkBlot(val l: Float, val t: Float, val s: Float)
 
 /* Ataque de las palabras: 60 segundos, 3 vidas, elegir la palabra bien escrita. */
 @Composable
@@ -51,7 +50,7 @@ fun AttackScreen(g: Game) {
     var combo by remember { mutableIntStateOf(0) }
     var locked by remember { mutableStateOf(false) }
     var marks by remember { mutableStateOf(mapOf<String, Int>()) }
-    val inks = remember { mutableStateListOf<Ink>() }
+    val inks = remember { mutableStateListOf<InkBlot>() }
     val splat = remember { Animatable(1f) }
     val jolt = remember { Animatable(0f) }
     val scope = rememberCoroutineScope()
@@ -92,7 +91,7 @@ fun AttackScreen(g: Game) {
             marks = mapOf(o to 2, cur.text to 1)
             lives--; combo = 0
             g.tone(200, 150)
-            inks.add(Ink(Random.nextInt(5, 65).toFloat(), Random.nextInt(5, 65).toFloat(), Random.nextInt(90, 170).toFloat()))
+            inks.add(InkBlot(Random.nextInt(5, 65).toFloat(), Random.nextInt(5, 65).toFloat(), Random.nextInt(90, 170).toFloat()))
             scope.launch {
                 splat.snapTo(0f)
                 splat.animateTo(1f, spring(dampingRatio = Spring.DampingRatioMediumBouncy))
