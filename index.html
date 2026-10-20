@@ -8,8 +8,10 @@
 <body>
 <title>Marty y las Palabras</title>
 <meta name="claude:viewport-fit-sides" content="cover">
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;800&family=Nunito:wght@500;700;800&display=swap">
 <style>
+/* Fuentes incluidas en la app (licencia SIL OFL) para que funcione sin internet */
+@font-face{font-family:"Baloo 2";src:url(fonts/baloo2.woff2) format("woff2");font-weight:400 800;font-display:swap}
+@font-face{font-family:"Nunito";src:url(fonts/nunito.woff2) format("woff2");font-weight:200 1000;font-display:swap}
 /* Concepto: concurso espacial de ortografía. Fondo de cosmos, tarjeta de juego al centro, presentador Marty arriba y el saboteador Borrón que aparece cuando algo sale mal. Un solo ambiente oscuro a propósito. */
 :root{
   --space:#150f3a; --space2:#241b5e; --card:#2b2270; --ink:#f6f1ff; --muted:#b9b0ec; --line:#44399a;
@@ -486,8 +488,11 @@ function setH(t,sub){$("h1").textContent=t}
 var ac=null;
 function tone(f){try{ac=ac||new (window.AudioContext||window.webkitAudioContext)();var t=ac.currentTime;f.forEach(function(x,i){var o=ac.createOscillator(),g=ac.createGain();o.type="triangle";o.frequency.value=x;g.gain.setValueAtTime(.15,t+i*.12);g.gain.exponentialRampToValueAtTime(.001,t+i*.12+.25);o.connect(g);g.connect(ac.destination);o.start(t+i*.12);o.stop(t+i*.12+.26)})}catch(e){}}
 function esVoice(){try{var v=speechSynthesis.getVoices();for(var i=0;i<v.length;i++)if(/^es/i.test(v[i].lang))return v[i]}catch(e){}return null}
-function canSpeak(){try{if(!("speechSynthesis" in window))return false;var v=speechSynthesis.getVoices();return v.length===0||!!esVoice()}catch(e){return false}}
-function speak(w){try{if(!window.speechSynthesis)return;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(w);var v=esVoice();if(v){u.voice=v;u.lang=v.lang}else u.lang="es-ES";u.rate=.8;speechSynthesis.speak(u)}catch(e){}}
+/* En la app Android la voz del navegador no está disponible: se usa la del teléfono (complemento nativo) */
+var CAP=(function(){try{var c=window.Capacitor;return c&&c.isNativePlatform&&c.isNativePlatform()?c:null}catch(e){return null}})();
+function nativeTTS(){return CAP&&CAP.Plugins&&CAP.Plugins.TextToSpeech}
+function canSpeak(){if(nativeTTS())return true;try{if(!("speechSynthesis" in window))return false;var v=speechSynthesis.getVoices();return v.length===0||!!esVoice()}catch(e){return false}}
+function speak(w){var t=nativeTTS();if(t){t.stop().catch(function(){}).then(function(){return t.speak({text:w,lang:"es-ES",rate:.85,pitch:1,volume:1})}).catch(function(){});return}try{if(!window.speechSynthesis)return;speechSynthesis.cancel();var u=new SpeechSynthesisUtterance(w);var v=esVoice();if(v){u.voice=v;u.lang=v.lang}else u.lang="es-ES";u.rate=.8;speechSynthesis.speak(u)}catch(e){}}
 function say(t,who){who=who||"p";var was=$("top").classList.contains("blot");$("top").className="top"+(who==="b"?" blot":"");$("who").textContent=who==="b"?"Borrón":"Marty";$("say").textContent=t;if((who==="b")!==was){var s=document.querySelector(who==="b"?".sv-b":".sv-p");s.classList.remove("enter");void s.getBoundingClientRect();s.classList.add("enter")}}
 function mood(c){var a=$("av");a.className="av";void a.offsetWidth;if(c)a.className="av "+c}
 function starsRow(n,s){var h="";for(var i=0;i<3;i++)h+='<svg width="'+s+'" height="'+s+'" viewBox="0 0 24 24" style="fill:'+(i<n?"var(--sun)":"var(--line)")+'"><path d="M12 2l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 18l-6.4 3.6L7 14.5l-5.3-5 7.2-.9z"/></svg>';return h}
@@ -1267,6 +1272,7 @@ function attackEnd(){
 
 try{if(window.speechSynthesis)speechSynthesis.getVoices()}catch(e){}
 document.querySelector(".sv-p").innerHTML=martyBust();
+if(CAP&&CAP.Plugins&&CAP.Plugins.App)CAP.Plugins.App.addListener("backButton",function(){if($("m-reto"))CAP.Plugins.App.exitApp();else exitGame()});
 home();
 </script>
 

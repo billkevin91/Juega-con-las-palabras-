@@ -1,0 +1,7 @@
+<?xml version='1.0' encoding='utf-8'?>
+<resources>
+    <string name="app_name">Marty y las Palabras</string>
+    <string name="title_activity_main">Marty y las Palabras</string>
+    <string name="package_name">com.billkevin91.martypalabras</string>
+    <string name="custom_url_scheme">com.billkevin91.martypalabras</string>
+</resources>

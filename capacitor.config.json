@@ -1,0 +1,8 @@
+{
+  "appId": "com.billkevin91.martypalabras",
+  "appName": "Marty y las Palabras",
+  "webDir": "www",
+  "android": {
+    "backgroundColor": "#150f3a"
+  }
+}
