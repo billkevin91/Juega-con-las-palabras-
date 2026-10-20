@@ -274,7 +274,7 @@ fun AnagramaGame(g: Game, s: Session) {
                             if (used[i] == true && !won) { alpha = 0f; return@graphicsLayer }
                             if (hop != null) {
                                 val p = ((t - hop.first) / .6f).coerceIn(0f, 1f)
-                                val dx = ((hop.second - (n - 1) / 2f) * (sz + sGap) - (i - (n - 1) / 2f) * (u + gap)).toPx()
+                                val dx = ((sz + sGap) * (hop.second - (n - 1) / 2f) - (u + gap) * (i - (n - 1) / 2f)).toPx()
                                 val dy = ((H * .15f) - (H * .975f - u * .65f)).toPx()
                                 translationX = dx * p
                                 translationY = dy * p - u.toPx() * .8f * sin(PI.toFloat() * p)

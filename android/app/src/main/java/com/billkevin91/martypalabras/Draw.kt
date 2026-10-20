@@ -36,8 +36,13 @@ object Paths {
     private val cache = HashMap<String, Path>()
     fun of(d: String): Path {
         if (cache.size > 6000) cache.clear()
-        return cache.getOrPut(d) { PathParser().parsePathString(d).toPath() }
+        return cache.getOrPut(d) { PathParser().parsePathString(plain(d)).toPath() }
     }
+
+    /** Los números generados en Kotlin pueden salir como 1.2E-15: los paso a decimales normales. */
+    private val EXP = Regex("-?[0-9]*\\.?[0-9]+[eE][-+]?[0-9]+")
+    private fun plain(d: String): String =
+        if (d.contains('E') || d.contains('e')) d.replace(EXP) { java.math.BigDecimal(it.value).toPlainString() } else d
 }
 
 private fun outline(sw: Float) = Stroke(sw, cap = StrokeCap.Round, join = StrokeJoin.Round)

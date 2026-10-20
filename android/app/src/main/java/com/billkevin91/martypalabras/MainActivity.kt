@@ -35,6 +35,12 @@ class MainActivity : ComponentActivity() {
         super.onCreate(savedInstanceState)
         game = Game(this)
         game.home()
+        // Para las pruebas automáticas: abrir directamente un planeta ("--es demo pantano").
+        when (val demo = intent?.getStringExtra("demo")) {
+            null, "home" -> Unit
+            "attack" -> game.attack()
+            else -> if (PLANETS.any { it.key == demo }) game.play(demo, Ctx(reto = false))
+        }
         setContent {
             BackHandler(enabled = game.screen != Screen.Home) { game.back() }
             App(game)
