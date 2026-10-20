@@ -339,6 +339,51 @@ form{display:contents}
 .kk.go{grid-column:span 4;font-size:18px;text-transform:none;color:#2a1450;text-shadow:none;background:linear-gradient(#fff08a,#f0a400);box-shadow:inset 0 2px 0 rgba(255,255,255,.7),0 4px 0 #0e0830}
 .kk.go:active,.kk.go.hit{box-shadow:inset 0 2px 0 rgba(255,255,255,.7),0 1px 0 #0e0830}
 @media (max-width:420px){.kk{height:42px;font-size:18px;border-radius:7px}.kr{gap:4px}.kk.del,.kk.go{font-size:14px}.term{padding:8px 6px 12px}}
+/* Planeta Anagrama: pradera alienígena con islas flotantes, portales y conejos */
+.meadow{position:relative;width:100%;aspect-ratio:16/9;container-type:inline-size;border-radius:22px;overflow:hidden;border:3px solid #1b0f3a;background:#a77cf0;user-select:none}
+.meadow::after{content:"";position:absolute;inset:0;border-radius:inherit;box-shadow:inset 0 0 0 3px rgba(255,255,255,.35);pointer-events:none;z-index:6}
+.meadow .bg{position:absolute;inset:0;width:100%;height:100%}
+.meadow .ppic{position:absolute;left:14.4%;top:47.2%;width:11cqw;height:11cqw;transform:translate(-50%,-50%);display:grid;place-items:center;font-size:28px;font-size:6cqw;line-height:1;z-index:3;filter:drop-shadow(0 .4cqw .4cqw rgba(0,0,0,.35))}
+.meadow .mslots{--s:8cqw;position:absolute;left:50%;top:15%;transform:translate(-50%,-50%);display:flex;gap:calc(var(--s)*.14);z-index:4}
+.meadow .ms{width:var(--s);height:calc(var(--s)*1.15);border-radius:calc(var(--s)*.2);background:rgba(255,255,255,.3);border:max(2px,calc(var(--s)*.06)) dashed rgba(255,255,255,.95);display:grid;place-items:center;font:800 24px var(--font-display);font-size:calc(var(--s)*.72);line-height:1;color:#3a1f7a;text-transform:uppercase}
+.meadow .ms.cur{border-color:#fff36a;animation:curb .9s ease-in-out infinite alternate}
+.meadow .ms.on{border-style:solid;border-color:#1b0f3a;background:linear-gradient(#fff7c2,#ffd24a);box-shadow:0 .5cqw 0 rgba(27,15,58,.35);animation:none}
+.meadow .ms.on.pop{animation:sgpop .45s cubic-bezier(.2,1.5,.4,1)}
+.meadow.won .ms.on{background:linear-gradient(#e2ffe9,var(--leaf));box-shadow:0 0 1.6cqw rgba(140,255,170,.9)}
+.meadow .bunnies{--u:14cqw;position:absolute;left:50%;bottom:2.5%;transform:translateX(-50%);display:flex;align-items:flex-end;gap:calc(var(--u)*.04);z-index:4}
+.rb{all:unset;box-sizing:border-box;position:relative;flex:none;cursor:pointer;width:var(--u);height:calc(var(--u)*1.3)}
+.rb:focus-visible{outline:4px solid var(--sky);outline-offset:2px;border-radius:12px}
+.rb .in{position:absolute;inset:0;transform-origin:50% 100%;animation:breathe 2.6s ease-in-out var(--d) infinite}
+@keyframes breathe{0%,100%{transform:scale(1,1)}50%{transform:scale(1.03,.97)}}
+.rb svg{position:absolute;inset:0;width:100%;height:100%;overflow:visible;transition:transform .15s}
+.rb:hover svg,.rb:hover .sg{transform:translateY(-4%)}
+.rb:hover .sg{transform:translate(-50%,-4%) rotate(var(--r))}
+.rb .sg{position:absolute;left:50%;top:64%;width:52%;height:30%;transform:translateX(-50%) rotate(var(--r));border-radius:calc(var(--u)*.07);background:var(--sc);border:max(2px,calc(var(--u)*.03)) solid #1b0f3a;display:grid;place-items:center;font:800 24px var(--font-display);font-size:calc(var(--u)*.3);line-height:1;color:#1b0f3a;text-transform:uppercase;box-shadow:0 calc(var(--u)*.03) 0 rgba(27,15,58,.35);transition:transform .15s}
+.rb .ear{--dr:-35deg;transform-box:fill-box;transform-origin:50% 100%;animation:earw 3.2s ease-in-out var(--d) infinite}
+.rb .ear.r{--dr:35deg;animation-delay:calc(var(--d) - .5s)}
+@keyframes earw{0%,70%,100%{transform:rotate(0)}80%{transform:rotate(-10deg)}90%{transform:rotate(6deg)}}
+.rb .ey{transform-box:fill-box;transform-origin:50% 50%;animation:blink 4s var(--d) infinite}
+.rb .bulb{animation:glowb 1.6s ease-in-out var(--d) infinite}
+.rb.no .in{animation:wob .45s}
+.rb.no .ear{animation:droop 1s ease-in-out}
+@keyframes droop{0%,100%{transform:rotate(0)}30%,70%{transform:rotate(var(--dr))}}
+.rb.going{pointer-events:none;z-index:5}
+.rb.used{visibility:hidden;pointer-events:none}
+.meadow.won .rb.used{visibility:visible}
+.meadow.won .rb .in{animation:rbjoy .5s ease-in-out var(--j) infinite alternate}
+@keyframes rbjoy{from{transform:translateY(0) scale(1.03,.97)}to{transform:translateY(-14%) scale(.98,1.03)}}
+.meadow .isl{animation:isl 5s ease-in-out var(--d,0s) infinite alternate}
+@keyframes isl{from{transform:translateY(-4px)}to{transform:translateY(5px)}}
+.meadow .spin{transform-box:fill-box;transform-origin:center;animation:spin var(--t,6s) linear infinite}
+.meadow .spin.rev{animation-direction:reverse}
+@keyframes spin{to{transform:rotate(360deg)}}
+.meadow.won .spin{animation-duration:1.2s}
+.meadow .fl{transform-box:fill-box;transform-origin:50% 100%;animation:kelp 3s ease-in-out var(--d,0s) infinite alternate}
+.meadow .bulb{animation:glowb 1.6s ease-in-out var(--d,0s) infinite}
+.meadow .twk{animation:runeg 2.4s ease-in-out var(--d) infinite}
+.meadow .fall{stroke-dasharray:6 6;animation:fall .6s linear infinite}
+@keyframes fall{to{stroke-dashoffset:-12}}
+.meadow .cloud{animation:streak 12s ease-in-out var(--d,0s) infinite alternate}
 @media (max-width:380px){.slot{width:40px;height:52px;font-size:26px}.tile,.opt{min-width:46px;height:54px;font-size:24px}.av{width:68px;height:68px}.key{width:34px;height:42px}.bub{width:100px;height:100px;font-size:16px}}
 @media (prefers-reduced-motion:reduce){*{animation:none!important;transition:none!important}}
 </style>
@@ -897,19 +942,114 @@ document.addEventListener("keydown",function(e){
   else if(e.key.length===1&&/^[a-zñáéíóúü]$/i.test(e.key)){e.preventDefault();tKey(e.key.toLowerCase())}
 });
 
-/* Anagrama */
+/* Anagrama: pradera alienígena con conejos que llevan las letras */
+var SIGNC=["#ffe36a","#8fdcff","#ff9db4","#a6f7a0","#c9b0ff","#ffc58a"];
+function fluff(cx,cy,rx,ry,n,amp){
+  var p=function(a,k){return (cx+Math.cos(a)*rx*k).toFixed(1)+' '+(cy+Math.sin(a)*ry*k).toFixed(1)},d='M'+p(0,1);
+  for(var i=1;i<=n;i++){var a=i/n*2*Math.PI,m=(i-.5)/n*2*Math.PI;d+='Q'+p(m,1+amp)+' '+p(a,1)}
+  return d+'Z';
+}
+var RB_BODY=fluff(50,100,32,26,14,.1),RB_HEAD=fluff(50,62,27,23,12,.09);
+function rabbitSVG(i){
+  var c=SIGNC[i%SIGNC.length],o='stroke="#1b0f3a" stroke-width="3" stroke-linejoin="round"';
+  return '<svg viewBox="0 0 100 130" aria-hidden="true">'+
+  '<g class="ear"><path d="M40 48C27 30 26 6 34 4C42 2 47 26 47 46Z" fill="#fff" '+o+'/><path d="M38 42C32 29 31 14 35 12C39 11 42 28 43 42Z" fill="#ffb3d1"/></g>'+
+  '<g class="ear r"><path d="M60 48C73 30 74 6 66 4C58 2 53 26 53 46Z" fill="#fff" '+o+'/><path d="M62 42C68 29 69 14 65 12C61 11 58 28 57 42Z" fill="#ffb3d1"/></g>'+
+  '<path d="M50 38V30" stroke="#1b0f3a" stroke-width="2.5"/><circle class="bulb" cx="50" cy="27" r="4" fill="'+c+'" stroke="#1b0f3a" stroke-width="2"/>'+
+  '<ellipse cx="34" cy="124" rx="11" ry="5.5" fill="#fff" '+o+'/><ellipse cx="66" cy="124" rx="11" ry="5.5" fill="#fff" '+o+'/>'+
+  '<path d="'+RB_BODY+'" fill="#fff" '+o+'/><ellipse cx="50" cy="106" rx="20" ry="14" fill="#efeaff"/>'+
+  '<path d="'+RB_HEAD+'" fill="#fff" '+o+'/>'+
+  '<circle cx="34" cy="68" r="5" fill="#ffb3d1" opacity=".8"/><circle cx="66" cy="68" r="5" fill="#ffb3d1" opacity=".8"/>'+
+  '<g class="ey"><ellipse cx="41" cy="59" rx="4.2" ry="5.2" fill="#1b1448"/><ellipse cx="59" cy="59" rx="4.2" ry="5.2" fill="#1b1448"/><circle cx="42.5" cy="57" r="1.6" fill="#fff"/><circle cx="60.5" cy="57" r="1.6" fill="#fff"/></g>'+
+  '<path d="M47 65H53L50 68.5Z" fill="#ff7fa8" stroke="#1b0f3a" stroke-width="1.5" stroke-linejoin="round"/><path d="M50 69V71M46 71Q48 74 50 71Q52 74 54 71" stroke="#1b0f3a" stroke-width="1.8" fill="none" stroke-linecap="round"/>'+
+  '<path d="M30 64L20 62M30 68L20 70M70 64L80 62M70 68L80 70" stroke="#1b0f3a" stroke-width="1.2" opacity=".55"/>'+
+  '<path d="M36 86L50 79L64 86" stroke="#1b0f3a" stroke-width="1.6" fill="none"/></svg>';
+}
+function mportal(x,y,r,c1,c2,c3,clear){
+  if(clear)return '<g transform="translate('+x+' '+y+') scale(1 1.25)"><circle r="'+(r*1.35)+'" fill="'+c1+'" opacity=".25"/><circle r="'+r+'" fill="#2a1460" stroke="#1b0f3a" stroke-width="4"/>'+
+  '<circle class="spin" r="'+(r*.9)+'" fill="none" stroke="'+c2+'" stroke-width="'+(r*.14)+'" stroke-dasharray="'+(r*.9)+' '+(r*.35)+'" style="--t:5s"/><circle class="spin rev" r="'+(r*1.12)+'" fill="none" stroke="'+c3+'" stroke-width="3" stroke-dasharray="'+(r*.4)+' '+(r*.25)+'" style="--t:7s"/>'+
+  '<circle r="'+(r*.78)+'" fill="#effcff" stroke="'+c1+'" stroke-width="3"/><circle r="'+(r*.78)+'" fill="'+c1+'" opacity=".3"/></g>';
+  return '<g transform="translate('+x+' '+y+') scale(1 1.25)"><circle r="'+(r*1.3)+'" fill="'+c1+'" opacity=".22"/><circle r="'+r+'" fill="#2a1460" stroke="#1b0f3a" stroke-width="4"/>'+
+  '<circle class="spin" r="'+(r*.82)+'" fill="none" stroke="'+c2+'" stroke-width="'+(r*.2)+'" stroke-dasharray="'+(r*.9)+' '+(r*.35)+'" style="--t:5s"/>'+
+  '<circle class="spin rev" r="'+(r*.55)+'" fill="none" stroke="'+c3+'" stroke-width="'+(r*.14)+'" stroke-dasharray="'+(r*.5)+' '+(r*.3)+'" style="--t:3.5s"/>'+
+  '<circle r="'+(r*.32)+'" fill="'+c1+'" opacity=".55"/><circle r="'+r+'" fill="none" stroke="'+c1+'" stroke-width="3"/></g>';
+}
+function misland(x,y,w,d,extra){
+  var h=w*.3;
+  return '<g class="isl" style="--d:'+d+'s"><g transform="translate('+x+' '+y+')">'+
+  '<path d="M'+(-w/2)+' 0Q'+(-w*.32)+' '+h+' 0 '+(h*1.6)+'Q'+(w*.3)+' '+h+' '+(w/2)+' 0Z" fill="url(#md-rk)" stroke="#1b0f3a" stroke-width="3" stroke-linejoin="round"/>'+
+  '<path d="M'+(-w*.2)+' '+(h*.4)+'L'+(-w*.1)+' '+(h*.9)+'M'+(w*.15)+' '+(h*.3)+'L'+(w*.08)+' '+(h*.8)+'" stroke="#e2d0ff" stroke-width="2.5" opacity=".6" stroke-linecap="round"/>'+
+  '<ellipse rx="'+(w/2+2)+'" ry="'+(w*.11)+'" fill="url(#md-gr)" stroke="#1b0f3a" stroke-width="3"/>'+
+  '<path d="M'+(-w*.3)+' '+(w*.06)+'q4 8 8 0M'+(w*.1)+' '+(w*.08)+'q4 9 8 0" stroke="#3fbf5a" stroke-width="5" fill="none" stroke-linecap="round"/>'+
+  (extra||'')+'</g></g>';
+}
+function aflower(x,y,h,c,d){return '<g class="fl" style="--d:'+d+'s"><path d="M'+x+' '+y+'Q'+(x-6)+' '+(y-h/2)+' '+x+' '+(y-h)+'" stroke="#2f9a4a" stroke-width="3" fill="none"/><circle class="bulb" cx="'+x+'" cy="'+(y-h-4)+'" r="6" fill="'+c+'" stroke="#1b0f3a" stroke-width="2" style="--d:'+d+'s"/><ellipse cx="'+(x+5)+'" cy="'+(y-h*.45)+'" rx="6" ry="3" fill="#3fbf5a" transform="rotate(-30 '+(x+5)+' '+(y-h*.45)+')"/></g>'}
+function meadowSVG(){
+  var s='<svg class="bg" viewBox="0 0 640 360" preserveAspectRatio="xMidYMid slice" aria-hidden="true"><defs>'+
+  '<linearGradient id="md-sky" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#5b4bd8"/><stop offset=".4" stop-color="#a77cf0"/><stop offset=".75" stop-color="#ff9fd0"/><stop offset="1" stop-color="#ffd9a8"/></linearGradient>'+
+  '<linearGradient id="md-gr" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b8ff8a"/><stop offset="1" stop-color="#3fbf5a"/></linearGradient>'+
+  '<linearGradient id="md-rk" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#b07cff"/><stop offset="1" stop-color="#5a3fc0"/></linearGradient>'+
+  '<linearGradient id="md-h1" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#6fe0c0"/><stop offset="1" stop-color="#2a9a9a"/></linearGradient>'+
+  '<linearGradient id="md-h2" x1="0" y1="0" x2="0" y2="1"><stop offset="0" stop-color="#9df07a"/><stop offset="1" stop-color="#3aa860"/></linearGradient></defs>';
+  s+='<rect width="640" height="360" fill="url(#md-sky)"/>';
+  s+='<g fill="#fff">'+[[30,20,1.4,0],[150,36,1.1,-1],[260,14,1.3,-.5],[400,30,1,-1.6],[470,12,1.4,-.8],[620,90,1.2,-2],[16,110,1,-1.2],[300,120,1,-.3]].map(function(p){return '<circle class="twk" cx="'+p[0]+'" cy="'+p[1]+'" r="'+p[2]+'" style="--d:'+p[3]+'s"/>'}).join("")+'</g>';
+  s+='<g transform="translate(578 50) rotate(-14)"><ellipse rx="52" ry="11" fill="none" stroke="#fff3a0" stroke-width="5"/><circle r="28" fill="#ffb86b" stroke="#1b0f3a" stroke-width="3"/><path d="M-26 -6Q0 2 26 -8M-24 10Q0 18 26 8" stroke="#e0703c" stroke-width="4" fill="none" opacity=".6"/><path d="M-52 0A52 11 0 0 0 52 0" stroke="#fff3a0" stroke-width="5" fill="none"/></g>';
+  s+='<circle cx="44" cy="40" r="12" fill="#e8f6ff" stroke="#1b0f3a" stroke-width="2.5"/><circle cx="40" cy="37" r="3" fill="#bcd9e8"/>';
+  s+='<g fill="#fff" opacity=".85"><g class="cloud"><ellipse cx="120" cy="96" rx="34" ry="11"/><ellipse cx="108" cy="88" rx="16" ry="11"/><ellipse cx="130" cy="86" rx="13" ry="9"/></g><g class="cloud" style="--d:-5s"><ellipse cx="500" cy="118" rx="30" ry="10"/><ellipse cx="490" cy="110" rx="14" ry="10"/></g></g>';
+  /* portales mágicos */
+  s+=mportal(548,162,34,"#ff7fc2","#ffc6ec","#fff3a0");
+  /* islas flotantes */
+  s+=misland(92,226,96,-1.4,'')+misland(548,222,90,-2.6,'');
+  s+=misland(186,118,64,-.8,aflower(-8,-4,16,"#7dffe3",-.5))+misland(452,104,56,-3,aflower(6,-4,14,"#ffe36a",-1.2));
+  s+='<path class="fall" d="M'+(320+60)+' 98V170" stroke="#9fe8ff" stroke-width="4" opacity=".8"/>';
+  s+=misland(320,90,300,0,'<g transform="translate(-118 -6) scale(.5)">'+mush(0,0,1,"#ff7fc2","#ffe8f2")+'</g><g transform="translate(124 -4) scale(.4)">'+mush(0,0,1,"#7a4fd8","#e9ddff")+'</g>');
+  s+=mportal(92,170,40,"#7dffe3","#2db8a8","#ffe36a",1);
+  /* colinas de la pradera */
+  s+='<path d="M-10 370V246Q110 206 230 232T470 220T650 230V370Z" fill="url(#md-h1)" stroke="#1b0f3a" stroke-width="3"/>';
+  s+=aflower(30,262,30,"#ff7fc2",0)+aflower(610,256,34,"#7dffe3",-1)+aflower(250,240,22,"#ffe36a",-2)+aflower(420,232,24,"#ff9a3c",-.6);
+  s+='<path d="M-10 370V292Q160 262 320 286T650 280V370Z" fill="url(#md-h2)" stroke="#1b0f3a" stroke-width="3"/>';
+  s+='<g stroke="#2f8a4a" stroke-width="3" stroke-linecap="round">'+[24,40,600,616,180,470].map(function(x,j){return '<path d="M'+x+' 352Q'+(x+(j%2?5:-5))+' 338 '+(x+(j%2?2:-2))+' 326"/>'}).join("")+'</g>';
+  s+=aflower(18,340,26,"#c9b0ff",-1.5)+aflower(624,342,30,"#ffe36a",-.3);
+  return s+'</svg>';
+}
 function qAnagrama(w){
   var W=w[0].toUpperCase(),L=W.split(""),s=shuffle(L),n=0;while(s.join("")===W&&n++<10)s=shuffle(L);
   st.word=W;st.pos=0;
-  var h='<div class="row" id="slots">';L.forEach(function(){h+='<div class="slot"></div>'});h+='</div><div class="row" id="tiles">';
-  s.forEach(function(c,i){h+='<button class="tile" data-c="'+c+'" style="background:'+COLORS[i%5]+'">'+c+'</button>'});
-  frame(h+'</div>',{hear:true});say("Toca las letras en orden para formar la palabra.");
-  document.querySelectorAll("#tiles .tile").forEach(function(b){b.onclick=function(){
-    if(st.locked)return;
-    if(b.dataset.c===W[st.pos]){var sl=document.querySelectorAll("#slots .slot")[st.pos];sl.textContent=b.dataset.c;sl.className="slot filled";b.classList.add("used");st.pos++;tone([520]);if(st.pos===W.length)win(!st.tried)}
-    else wrong(b);
-  }});
+  var u=Math.min(14,88/L.length/1.04),sz=Math.min(8,72/L.length/1.14),sl="",rb="";
+  L.forEach(function(c,i){sl+='<div class="ms'+(i===0?" cur":"")+'"></div>'});
+  s.forEach(function(c,i){rb+='<button class="rb" data-c="'+c+'" aria-label="Conejo con la letra '+c+'" style="--d:-'+(i*.45).toFixed(2)+'s;--j:'+(i*.08).toFixed(2)+'s;--r:'+((((i*37)%7)-3)*2)+'deg;--sc:'+SIGNC[i%SIGNC.length]+'"><span class="in">'+rabbitSVG(i)+'<span class="sg">'+c+'</span></span></button>'});
+  frame('<div class="meadow" id="mdw">'+meadowSVG()+'<div class="ppic" id="pic">'+w[1]+'</div><div class="mslots" id="msl" style="--s:'+sz.toFixed(2)+'cqw">'+sl+'</div><div class="bunnies" style="--u:'+u.toFixed(2)+'cqw">'+rb+'</div></div>',{hear:true,nopic:true});
+  say("Toca los conejitos en orden para formar la palabra.");
+  document.querySelectorAll("#mdw .rb").forEach(function(b){b.onclick=function(){bunny(b)}});
 }
+function bunny(b){
+  if(!st||st.k!=="anagrama"||st.locked||b.classList.contains("used")||b.classList.contains("going"))return;
+  if(b.dataset.c!==st.word[st.pos]){
+    wrong(null);say("¡Ese conejito no va ahí! Busca la letra que sigue.");
+    b.classList.remove("no");void b.offsetWidth;b.classList.add("no");return;
+  }
+  var slots=document.querySelectorAll("#msl .ms"),sl=slots[st.pos];st.pos++;
+  if(sl)sl.classList.remove("cur");
+  tone([520+st.pos*40]);b.classList.add("going");
+  var last=st.pos===st.word.length;
+  var done=function(){
+    b.classList.remove("going");b.classList.add("used");
+    if(sl){sl.textContent=b.dataset.c;sl.className="ms on pop"}
+    var nx=document.querySelectorAll("#msl .ms")[st.pos];if(nx&&!last)nx.classList.add("cur");
+    if(last){var m=$("mdw");if(m)m.classList.add("won")}
+  };
+  if(last)win(!st.tried);else say("¡Salta, conejito! Busca la siguiente letra.");
+  if(sl&&b.animate&&!(window.matchMedia&&matchMedia("(prefers-reduced-motion:reduce)").matches)){
+    var a=b.getBoundingClientRect(),t=sl.getBoundingClientRect(),dx=t.left+t.width/2-(a.left+a.width/2),dy=t.top+t.height/2-(a.top+a.height/2);
+    b.animate([{transform:"none",opacity:1},{transform:"translate("+(dx*.5)+"px,"+(dy*.5-a.height*.6)+"px) scale(.75) rotate(-10deg)",offset:.5},{transform:"translate("+dx+"px,"+dy+"px) scale(.2)",opacity:.2}],{duration:600,easing:"ease-in-out"}).onfinish=done;
+  }else done();
+}
+document.addEventListener("keydown",function(e){
+  if(!st||st.k!=="anagrama"||st.locked||e.ctrlKey||e.metaKey||e.altKey||e.key.length!==1)return;
+  var c=e.key.toUpperCase();if(KEYS.indexOf(c)<0)return;
+  var b=document.querySelector('#mdw .rb[data-c="'+c+'"]:not(.used):not(.going)');
+  if(b)bunny(b);else wrong(null);
+});
 
 /* Letra perdida */
 function qFalta(w){
