@@ -4,6 +4,7 @@ set -u
 PKG=com.billkevin91.mascota
 adb install -r apk/app-debug.apk
 adb shell appops set $PKG SYSTEM_ALERT_WINDOW allow
+adb shell pm grant $PKG android.permission.POST_NOTIFICATIONS || true
 mkdir -p shots
 adb logcat -c
 fail=0
