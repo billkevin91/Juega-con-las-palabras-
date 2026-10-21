@@ -42,6 +42,30 @@ Cada vez que se suben cambios a GitHub, la acción **APK Android** compila la ap
 3. Pasa `app-debug.apk` al teléfono y ábrelo para instalarlo
    (Android pedirá permitir "instalar apps de origen desconocido").
 
+## Mascotas en pantalla (`mascota/`)
+
+Una segunda app Android, aparte del juego: mascotas de los 90 (eSheep, Neko, zorritos...)
+que caminan **por encima de todas tus apps**, como el clásico eSheep de Windows.
+Es un port a Kotlin del motor de [desktopPet](https://github.com/Adrianotiger/desktopPet)
+(licencia MIT) y usa sus mismos archivos `animations.xml`.
+
+- Arrastra la mascota con el dedo, lánzala y verás cómo rebota y cae.
+- Toca dos veces para despedirla.
+- Desde la notificación: **Otra más** o **Quitar todas**.
+
+| Archivo | Contenido |
+| --- | --- |
+| `PetDef.kt` | Lee `animations.xml` y calcula sus expresiones (`screenW`, `random`...) |
+| `PetBrain.kt` | Movimiento, bordes, gravedad, lanzamiento e hijas (port de `FormPet.cs`) |
+| `PetService.kt` | Servicio que dibuja cada mascota en una ventanita flotante |
+| `MainActivity.kt` | Elegir mascota y tamaño, pedir el permiso y soltarla |
+| `assets/pets/` | Mascotas copiadas de desktopPet (sprites + animaciones) |
+
+**Instalarla:** en GitHub, **Actions** → **APK Mascotas** → descarga `mascotas-apk`,
+descomprímelo e instala `app-debug.apk`. Al abrirla, pulsa **Dar permiso para mostrarse
+sobre otras apps**, activa el permiso, vuelve y pulsa **Soltar en la pantalla**.
+Funciona desde Android 7.0. Para abrirla en Android Studio elige la carpeta **`mascota/`**.
+
 ## Versión web (`index.html`)
 
 La versión original del juego en un solo archivo HTML. Se abre en cualquier navegador
