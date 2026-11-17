@@ -46,7 +46,7 @@ private val KITE_PALETTES = listOf(
 /** Posición (x, y) y radio de cada barrilete, en unidades del dibujo. */
 private fun kiteSpots(n: Int, tall: Boolean): List<Triple<Float, Float, Float>> = when {
     tall && n == 2 -> listOf(Triple(190f, 380f, 125f), Triple(450f, 560f, 125f))
-    tall -> listOf(Triple(180f, 360f, 112f), Triple(460f, 480f, 112f), Triple(210f, 630f, 106f))
+    tall -> listOf(Triple(170f, 330f, 108f), Triple(468f, 455f, 108f), Triple(190f, 625f, 104f))
     n == 2 -> listOf(Triple(200f, 285f, 96f), Triple(440f, 285f, 96f))
     else -> listOf(Triple(112f, 300f, 88f), Triple(320f, 262f, 88f), Triple(528f, 300f, 88f))
 }
@@ -152,8 +152,8 @@ fun LeeGame(g: Game, s: Session) {
 private fun DrawScope.barrilete(pal: List<Color>, t: Float, glow: Float) {
     if (glow > 0f) circle(0f, 0f, 120f, Color(0xFFFFF36A), alpha = .45f * glow)
     // cola con moños
-    for (k in 0 until 5) {
-        val y = 100f + k * 22f
+    for (k in 0 until 3) {
+        val y = 100f + k * 20f
         val x = 10f * sin(t * 3f + k)
         path("M${x - 9} ${y - 6}L${x + 9} ${y + 6}M${x - 9} ${y + 6}L${x + 9} ${y - 6}", stroke = pal[k % pal.size], sw = 6f)
     }

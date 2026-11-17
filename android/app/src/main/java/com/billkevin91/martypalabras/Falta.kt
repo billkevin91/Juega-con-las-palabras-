@@ -47,16 +47,18 @@ private const val TRICKY = "ÁÉÍÓÚÜÑHBVGJYZC"
 private class TrainLayout(n: Int, tall: Boolean) {
     val vh = if (tall) TALL_CANDY else 480f
     val railY = if (tall) 430f else 280f
-    val ww = min(64f, 470f / n)
-    private val locoW = 128f
+    /** La locomotora se dibuja al 80 % para dejar más ancho a los vagones (y letras más grandes). */
+    val locoK = .8f
+    private val locoW = 128f * locoK
+    val ww = min(92f, (624f - locoW) / n)
     val x0 = (640f - n * ww - locoW) / 2
     val locoX = x0 + n * ww
     fun wagonX(i: Int) = x0 + i * ww
     val bodyTop = railY - 16 - ww * .5f
     /** Centro y tamaño de la caja con la letra encima de cada vagón. */
     fun crateC(i: Int) = wagonX(i) + ww / 2
-    val crateY = bodyTop - ww * .36f
-    val crateS = ww * .8f
+    val crateY = bodyTop - ww * .42f
+    val crateS = ww * .9f
     // Cajas de opciones en el andén
     val optY = if (tall) 600f else 395f
     val optS = if (tall) 118f else 88f
@@ -154,7 +156,7 @@ fun FaltaGame(g: Game, s: Session) {
                     contentAlignment = Alignment.Center,
                 ) {
                     Canvas(Modifier.fillMaxSize()) { group(s = size.width / 100f) { crate(if (j == gap) 1 else 0) } }
-                    Text(c, style = TextStyle(fontFamily = Baloo, fontWeight = FontWeight.ExtraBold, fontSize = (px * L.crateS * .55f).asSp(), color = Color(0xFF4A2C12)))
+                    Text(c, style = TextStyle(fontFamily = Baloo, fontWeight = FontWeight.ExtraBold, fontSize = (px * L.crateS * .62f).asSp(), color = Color(0xFF4A2C12)))
                 }
             }
             // Cajas de opciones en el andén
@@ -289,13 +291,17 @@ private fun DrawScope.train(t: Float, L: TrainLayout, n: Int, gap: Int, filled: 
         if (i == gap && !filled) {
             val cy = L.crateY
             val pulse = lerp(.6f, 1f, swing(t, .8f))
-            rect(L.crateC(i) - L.crateS / 2, cy - L.crateS / 2, L.crateS, L.crateS, 8f, Color.White, alpha = .25f * pulse)
-            rect(L.crateC(i) - L.crateS / 2, cy - L.crateS / 2, L.crateS, L.crateS, 8f, stroke = Color(0xFFFFF36A), sw = 3f, alpha = pulse)
-            textAt(tm, "?", L.crateC(i), cy, androidx.compose.ui.text.TextStyle(fontFamily = Baloo, fontWeight = FontWeight.ExtraBold, fontSize = units(L.crateS * .6f), color = Color(0xFFFFF36A)))
+            circle(L.crateC(i), cy, L.crateS * .75f, Color(0xFFFFF36A), alpha = .35f * pulse)
+            rect(L.crateC(i) - L.crateS / 2, cy - L.crateS / 2, L.crateS, L.crateS, 8f, Color(0xFFFF4F9A))
+            rect(L.crateC(i) - L.crateS / 2, cy - L.crateS / 2, L.crateS, L.crateS, 8f, stroke = Color(0xFFFFF36A), sw = 4f, alpha = pulse)
+            textAt(tm, "?", L.crateC(i), cy, androidx.compose.ui.text.TextStyle(fontFamily = Baloo, fontWeight = FontWeight.ExtraBold, fontSize = units(L.crateS * .7f), color = Color.White))
         }
     }
-    // locomotora
-    val x = L.locoX
+    // locomotora (dibujada al tamaño locoK, apoyada en la vía)
+    group(L.locoX, r, L.locoK) { loco(t, 0f, 0f, moving, spinA) }
+}
+
+private fun DrawScope.loco(t: Float, x: Float, r: Float, moving: Boolean, spinA: Float) {
     line(x - 4f, r - 18f, x + 6f, r - 18f, Ink, 4f)
     path("M${x + 108} ${r - 24}L${x + 128} ${r - 4}H${x + 104}Z", Color(0xFFFFE36A), Ink, 2.5f)
     rect(x + 8f, r - 64f, 84f, 44f, 18f, Color(0xFFFF6B8B), Ink, 3f)
