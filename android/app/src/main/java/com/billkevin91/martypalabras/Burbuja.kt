@@ -143,6 +143,8 @@ fun BurbujaGame(g: Game, s: Session) {
                             val tt = if (st == 0) t else b.at
                             val p = ((tt - b.born) / (b.dur * slow)).coerceIn(0f, 1f)
                             translationY = H.toPx() * lerp(1.04f, -.16f, p)
+                            // Se desvanecen antes de llegar al panel de la palabra.
+                            if (st == 0) alpha = (((if (tall) .84f else .72f) - p) / .1f).coerceIn(0f, 1f)
                             translationX = u.toPx() * 1.8f * wave(t, b.sw * 2)
                             if (st == 1) {
                                 val q = ((t - b.at) / .35f).coerceIn(0f, 1f)

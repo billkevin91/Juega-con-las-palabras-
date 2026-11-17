@@ -173,7 +173,6 @@ private fun DrawScope.meadow(t: Float, won: Boolean, vh: Float) {
     flower(250f, 240f, 22f, Color(0xFFFFE36A), 2f, t); flower(420f, 232f, 24f, Color(0xFFFF9A3C), .6f, t)
     // colina cercana: en la escena alta baja para dejar sitio a la primera fila de conejitos
     val nearDy = if (tall) 135f else 0f
-    if (tall) rect(-10f, 366f + nearDy, 660f, vh - 356f - nearDy, fill = Color(0xFF3AA860))
     group(y = nearDy) {
         path("M-10 370V292Q160 262 320 286T650 280V370Z", brush = vGrad(262f, 370f, 0f to Color(0xFF9DF07A), 1f to Color(0xFF3AA860)))
         path("M-10 370V292Q160 262 320 286T650 280V370Z", stroke = Ink, sw = 3f)
@@ -183,6 +182,8 @@ private fun DrawScope.meadow(t: Float, won: Boolean, vh: Float) {
         }
         flower(18f, 340f, 26f, Color(0xFFC9B0FF), 1.5f, t); flower(624f, 342f, 30f, Color(0xFFFFE36A), .3f, t)
     }
+    // relleno bajo la colina (tapa también su borde inferior)
+    if (tall) rect(-10f, 362f + nearDy, 660f, vh - 352f - nearDy, fill = Color(0xFF3AA860))
 }
 
 @Composable
