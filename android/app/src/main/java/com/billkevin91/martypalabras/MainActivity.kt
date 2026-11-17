@@ -74,12 +74,13 @@ fun App(g: Game) {
     ) {
         Column(
             Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).verticalScroll(rememberScrollState())
-                .padding(16.dp),
+                .padding(horizontal = 12.dp, vertical = 14.dp),
             horizontalAlignment = Alignment.CenterHorizontally,
         ) {
-            Column(Modifier.widthIn(max = 640.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(16.dp)) {
+            Column(Modifier.widthIn(max = 640.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(if (g.screen == Screen.Play) 10.dp else 16.dp)) {
                 HostBar(g)
-                Text(g.title, style = display(34))
+                // Durante el juego el título es pequeño: el espacio es para la escena.
+                Text(g.title, style = display(if (g.screen == Screen.Play) 22 else 34))
                 Screens(g)
             }
         }

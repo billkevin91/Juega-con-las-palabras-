@@ -78,9 +78,9 @@ fun Modifier.tap(enabled: Boolean = true, onClick: () -> Unit): Modifier =
 fun GameCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val shape = RoundedCornerShape(28.dp)
     Column(
-        modifier.fillMaxWidth().clip(shape).background(C.card).border(2.dp, C.line, shape).padding(16.dp),
+        modifier.fillMaxWidth().clip(shape).background(C.card).border(2.dp, C.line, shape).padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
-        verticalArrangement = Arrangement.spacedBy(16.dp),
+        verticalArrangement = Arrangement.spacedBy(14.dp),
         content = content,
     )
 }

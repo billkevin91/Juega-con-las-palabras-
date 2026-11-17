@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -39,7 +38,10 @@ import kotlin.random.Random
 
 /* Burbujeo (océano alienígena): escucha la palabra y atrapa sus letras en orden. */
 
-private class Bub(val id: Int, val c: String, val x: Float, val dur: Float, val born: Float, val c1: Color, val c2: Color, val sw: Float) {
+private const val TALL_OCEAN = 800f
+
+/** [lane] (0..1) elige el carril; el carril concreto depende de si la escena es alta o apaisada. */
+private class Bub(val id: Int, val c: String, val lane: Float, val jit: Float, val dur: Float, val born: Float, val c1: Color, val c2: Color, val sw: Float) {
     var state by mutableIntStateOf(0) // 0 subiendo, 1 reventada, 2 equivocada
     var at = 0f
 }
@@ -72,8 +74,7 @@ fun BurbujaGame(g: Game, s: Session) {
         }
         val dur = 8f + Random.nextFloat() * 4f
         val pal = BPAL.random()
-        val x = 8f + Random.nextInt(7) * 14.2f + Random.nextFloat() * 3f
-        bubs += Bub(nextId++, c, x, dur, time.value - frac * dur, pal.first, pal.second, 2f + Random.nextFloat() * 1.5f)
+        bubs += Bub(nextId++, c, Random.nextFloat() * .999f, Random.nextFloat() * 3f, dur, time.value - frac * dur, pal.first, pal.second, 2f + Random.nextFloat() * 1.5f)
     }
 
     fun catchB(b: Bub) {
@@ -105,19 +106,21 @@ fun BurbujaGame(g: Game, s: Session) {
         while (true) {
             delay(750)
             val now = time.value
-            bubs.removeAll { (it.state == 0 && now - it.born > it.dur) || (it.state != 0 && now - it.at > .7f) }
+            bubs.removeAll { (it.state == 0 && now - it.born > it.dur * 1.5f) || (it.state != 0 && now - it.at > .7f) }
             spawn(0f)
         }
     }
 
     QFrame(g, s, hear = sp, clue = if (sp) clue else null, onClue = { clue = true }) {
-        BoxWithConstraints(Modifier.scene(4f / 3f).background(Color(0xFF0B4A9A))) {
-            val W = maxWidth
-            val H = maxHeight
+        SceneBox(4f / 3f, 640f / TALL_OCEAN, Color(0xFF0B4A9A)) { W, H, tall ->
             val u = W / 100f
+            val px = W / 640f
+            val vh = if (tall) TALL_OCEAN else 480f
+            // En teléfono: burbujas más grandes, en 5 carriles, que tardan algo más en subir.
+            val slow = if (tall) 1.5f else 1f
             Canvas(Modifier.fillMaxSize()) {
                 val t = time.value
-                viewBox(640f, 480f) { ocean(t, won) }
+                viewBox(640f, vh) { ocean(t, won, vh) }
                 amb.forEach { (l, sz, per, d) ->
                     val p = ((t + d) / per) % 1f
                     val a = if (p < .12f) p / .12f * .9f else .9f * (1f - (p - .12f) / .88f)
@@ -128,40 +131,17 @@ fun BurbujaGame(g: Game, s: Session) {
                     circle(cx - sz * density * .12f, cy - sz * density * .12f, sz * density * .2f, Color.White.copy(alpha = .5f), alpha = a)
                 }
             }
-            // Portilla con el dibujo
-            Box(Modifier.at(W, H, 7.2f, 15.4f, u * 12, u * 12), contentAlignment = Alignment.Center) {
-                Text(if (clue) s.word.pic else "?", style = TextStyle(fontFamily = Baloo, fontWeight = FontWeight.ExtraBold, fontSize = (u * 7).asSp(), color = Color.White))
-            }
-            // Casillas de la palabra
-            Row(
-                Modifier.align(Alignment.TopCenter).offset(y = H * .154f - u * 4),
-                horizontalArrangement = Arrangement.spacedBy(u * .7f),
-            ) {
-                word.forEachIndexed { i, c ->
-                    val shape = RoundedCornerShape(u * 1.4f)
-                    val on = i < pos
-                    val cur = i == pos && !won
-                    Box(
-                        Modifier.size(u * 5.6f, u * 8).graphicsLayer {
-                            if (cur) alpha = lerp(.6f, 1f, swing(time.value, .9f))
-                        }.clip(shape).background(if (on) Color.White else Color.White.copy(alpha = .18f))
-                            .border(u * .4f, if (cur) Color(0xFFFFE36A) else Color.White.copy(alpha = .7f), shape),
-                        contentAlignment = Alignment.Center,
-                    ) {
-                        if (on) Text(c, style = TextStyle(fontFamily = Baloo, fontWeight = FontWeight.ExtraBold, fontSize = (u * 4.8f).asSp(), color = Color(0xFF0A4A9A)))
-                    }
-                }
-            }
             // Burbujas con letras
             bubs.forEach { b ->
                 key(b.id) {
-                    val d = u * 11
+                    val d = if (tall) u * 16 else u * 11
+                    val bx = if (tall) 12f + (b.lane * 5).toInt() * 19f + b.jit else 8f + (b.lane * 7).toInt() * 14.2f + b.jit
                     Box(
-                        Modifier.offset(W * (b.x / 100f) - d / 2, 0.dp).size(d).graphicsLayer {
+                        Modifier.offset(W * (bx / 100f) - d / 2, 0.dp).size(d).graphicsLayer {
                             val t = time.value
                             val st = b.state
                             val tt = if (st == 0) t else b.at
-                            val p = ((tt - b.born) / b.dur).coerceIn(0f, 1f)
+                            val p = ((tt - b.born) / (b.dur * slow)).coerceIn(0f, 1f)
                             translationY = H.toPx() * lerp(1.04f, -.16f, p)
                             translationX = u.toPx() * 1.8f * wave(t, b.sw * 2)
                             if (st == 1) {
@@ -202,11 +182,35 @@ fun BurbujaGame(g: Game, s: Session) {
                                 }
                             },
                             style = TextStyle(
-                                fontFamily = Baloo, fontWeight = FontWeight.ExtraBold, fontSize = (u * 6).asSp(),
+                                fontFamily = Baloo, fontWeight = FontWeight.ExtraBold, fontSize = (if (tall) u * 8.5f else u * 6f).asSp(),
                                 color = if (b.state == 1) C.leaf else Color.White,
                                 shadow = Shadow(Color(0xE6002864), blurRadius = 6f),
                             ),
                         )
+                    }
+                }
+            }
+            // Portilla con el dibujo
+            Box(Modifier.offset(px * 46 - u * 6, px * 74 - u * 6).size(u * 12), contentAlignment = Alignment.Center) {
+                Text(if (clue) s.word.pic else "?", style = TextStyle(fontFamily = Baloo, fontWeight = FontWeight.ExtraBold, fontSize = (u * 7).asSp(), color = Color.White))
+            }
+            // Casillas de la palabra
+            Row(
+                Modifier.align(Alignment.TopCenter).offset(y = px * 74 - u * 4),
+                horizontalArrangement = Arrangement.spacedBy(u * .7f),
+            ) {
+                word.forEachIndexed { i, c ->
+                    val shape = RoundedCornerShape(u * 1.4f)
+                    val on = i < pos
+                    val cur = i == pos && !won
+                    Box(
+                        Modifier.size(u * 5.6f, u * 8).graphicsLayer {
+                            if (cur) alpha = lerp(.6f, 1f, swing(time.value, .9f))
+                        }.clip(shape).background(if (on) Color.White else Color.White.copy(alpha = .18f))
+                            .border(u * .4f, if (cur) Color(0xFFFFE36A) else Color.White.copy(alpha = .7f), shape),
+                        contentAlignment = Alignment.Center,
+                    ) {
+                        if (on) Text(c, style = TextStyle(fontFamily = Baloo, fontWeight = FontWeight.ExtraBold, fontSize = (u * 4.8f).asSp(), color = Color(0xFF0A4A9A)))
                     }
                 }
             }
@@ -336,41 +340,55 @@ private fun DrawScope.swim(t: Float, dur: Float, dl: Float, rev: Boolean, block:
     group(x) { block() }
 }
 
-private fun DrawScope.ocean(t: Float, won: Boolean) {
-    rect(0f, 0f, 640f, 480f, brush = vGrad(0f, 480f, 0f to Color(0xFF8CF0FF), .35f to Color(0xFF37C4F0), .7f to Color(0xFF1B7FD6), 1f to Color(0xFF0C3F93)))
-    val ray = vGrad(0f, 480f, 0f to Color.White.copy(alpha = .55f), 1f to Color.Transparent)
-    listOf(floatArrayOf(110f, 170f, 300f, 190f, 0f), floatArrayOf(260f, 300f, 420f, 330f, 2f), floatArrayOf(400f, 450f, 560f, 500f, 4f), floatArrayOf(20f, 60f, 170f, 60f, 1.5f)).forEach { r ->
+private val FISH_A = Fish(Color(0xFFFFB13C), Color(0xFFD9701A), Color(0xFFFFE7A8), Color(0xFFC23A64), Color(0xFFFF7FC2))
+private val FISH_B = Fish(Color(0xFF35D6C8), Color(0xFF1A8F9C), Color(0xFFC9FFF6), Color.White, Color(0xFFFFE36A))
+private val RAYS = listOf(floatArrayOf(110f, 170f, 300f, 190f, 0f), floatArrayOf(260f, 300f, 420f, 330f, 2f), floatArrayOf(400f, 450f, 560f, 500f, 4f), floatArrayOf(20f, 60f, 170f, 60f, 1.5f))
+private val RAY_PATHS = mapOf(480f to rayPaths(480f), TALL_OCEAN to rayPaths(TALL_OCEAN))
+private fun rayPaths(vh: Float) = RAYS.map { r -> "M${r[0]} 0L${r[1]} 0L${r[2]} ${vh}L${r[3]} ${vh}Z" }
+
+/** [vh] es la altura del dibujo: 480 apaisado, 800 alto. El fondo marino baja y los animales se reparten. */
+private fun DrawScope.ocean(t: Float, won: Boolean, vh: Float) {
+    val dy = vh - 480f
+    val ky = vh / 480f
+    rect(0f, 0f, 640f, vh, brush = vGrad(0f, vh, 0f to Color(0xFF8CF0FF), .35f to Color(0xFF37C4F0), .7f to Color(0xFF1B7FD6), 1f to Color(0xFF0C3F93)))
+    val ray = vGrad(0f, vh, 0f to Color.White.copy(alpha = .55f), 1f to Color.Transparent)
+    val rays = RAY_PATHS.getValue(vh)
+    RAYS.forEachIndexed { ri, r ->
         val f = swing(t + r[4], 7f)
         spin(lerp(-3f, 3f, f), (r[0] + r[1]) / 2, 0f) {
-            path("M${r[0]} 0L${r[1]} 0L${r[2]} 480L${r[3]} 480Z", brush = ray, alpha = if (won) 1f else lerp(.55f, 1f, f))
+            path(rays[ri], brush = ray, alpha = if (won) 1f else lerp(.55f, 1f, f))
         }
     }
     group(x = 12f * wave(t, 12f)) { path("M-20 10Q20 0 60 10T140 10T220 10T300 10T380 10T460 10T540 10T620 10T700 10", stroke = Color.White, sw = 4f, alpha = .5f) }
-    path("M0 400L0 330Q40 290 80 330Q110 300 150 340Q200 280 240 340L270 400Z", Color(0xFF0A3B86), alpha = .35f)
-    path("M640 400L640 320Q600 280 560 330Q520 290 480 340Q440 300 400 350L380 400Z", Color(0xFF0A3B86), alpha = .35f)
-    swim(t, 30f, 0f, false) { ofish(0f, 190f, .9f, Fish(Color(0xFFFFB13C), Color(0xFFD9701A), Color(0xFFFFE7A8), Color(0xFFC23A64), Color(0xFFFF7FC2)), false, t) }
-    swim(t, 38f, 12f, true) { ofish(0f, 300f, 1f, Fish(Color(0xFF35D6C8), Color(0xFF1A8F9C), Color(0xFFC9FFF6), Color.White, Color(0xFFFFE36A)), true, t) }
-    swim(t, 46f, 20f, true) { group(s = -1f, sy = 1f) { opuffer(0f, 238f, .8f, t) } }
-    swim(t, 56f, 30f, false) { osquid(0f, 350f, .85f, t) }
+    group(y = dy) {
+        path("M0 400L0 330Q40 290 80 330Q110 300 150 340Q200 280 240 340L270 400Z", Color(0xFF0A3B86), alpha = .35f)
+        path("M640 400L640 320Q600 280 560 330Q520 290 480 340Q440 300 400 350L380 400Z", Color(0xFF0A3B86), alpha = .35f)
+    }
+    swim(t, 30f, 0f, false) { ofish(0f, 190f * ky, .9f, FISH_A, false, t) }
+    swim(t, 38f, 12f, true) { ofish(0f, 300f * ky, 1f, FISH_B, true, t) }
+    swim(t, 46f, 20f, true) { group(s = -1f, sy = 1f) { opuffer(0f, 238f * ky, .8f, t) } }
+    swim(t, 56f, 30f, false) { osquid(0f, 350f * ky, .85f, t) }
     swim(t, 34f, 6f, false) {
-        listOf(0f to 0f, 22f to -12f, 24f to 14f, 48f to 2f, 56f to -18f, 60f to 18f, 84f to -4f).forEachIndexed { i, (dx, dy) ->
-            group(dx, 150f + dy + lerp(-8f, 8f, swing(t, 3f, i * .13f))) {
+        listOf(0f to 0f, 22f to -12f, 24f to 14f, 48f to 2f, 56f to -18f, 60f to 18f, 84f to -4f).forEachIndexed { i, (dx, oy) ->
+            group(dx, 150f * ky + oy + lerp(-8f, 8f, swing(t, 3f, i * .13f))) {
                 path("M0 0Q8 -7 16 0Q8 7 0 0ZM-1 0L-9 -5L-9 5Z", Color(0xFF9BFFE8))
                 circle(12f, -1f, 1.8f, Color(0xFF10224F))
             }
         }
     }
-    ojelly(80f, 250f, 1f, Color(0xFFFF9FD6), Color(0xFFFF5FB4), 0f, t)
-    ojelly(560f, 290f, .8f, Color(0xFF9FD6FF), Color(0xFF4CC3FF), 2f, t)
-    path("M0 412Q80 394 170 406T340 402T520 408T640 398V480H0Z", brush = vGrad(398f, 480f, 0f to Color(0xFFF8DFA8), 1f to Color(0xFFC9955A)))
-    crystal(46f, 424f, 1f, Color(0xFFFF7FC2), Color(0xFFC04A98), t, 0f); crystal(82f, 434f, .65f, Color(0xFF7DFFE3), Color(0xFF2DB8A8), t, 1f)
-    crystal(596f, 426f, 1.05f, Color(0xFF7DFFE3), Color(0xFF2DB8A8), t, .5f); crystal(562f, 436f, .6f, Color(0xFFFFE36A), Color(0xFFE0A400), t, 1.5f)
-    okelp(18f, 440f, 120f, Color(0xFF2AA36A), 0f, t); okelp(104f, 440f, 86f, Color(0xFF35C27A), 1f, t); okelp(150f, 444f, 100f, Color(0xFF2AA36A), 2f, t)
-    okelp(618f, 442f, 110f, Color(0xFF35C27A), .5f, t); okelp(528f, 440f, 80f, Color(0xFF2AA36A), 1.5f, t)
-    ocoral(130f, 438f, 1f, Color(0xFFFF7A5A), Color(0xFFFFC2A8)); ocoral(190f, 432f, .8f, Color(0xFFB07CFF), Color(0xFFE2D0FF))
-    ocoral(500f, 438f, 1f, Color(0xFFFF7FC2), Color(0xFFFFD0EC)); ocoral(446f, 434f, .75f, Color(0xFFFFB13C), Color(0xFFFFE7A8)); ocoral(384f, 438f, .6f, Color(0xFF7DFFE3), Color(0xFFD8FFF7))
-    oanem(250f, 440f, 1f, Color(0xFFFF9FD6), Color.White, t); oanem(330f, 438f, .8f, Color(0xFF9FD6FF), Color.White, t)
-    ostar(224f, 462f, 1f, Color(0xFFFF9A3C)); ostar(420f, 466f, .9f, Color(0xFFFF7FC2)); oshell(160f, 466f, .8f); oshell(476f, 462f, .7f)
+    ojelly(80f, 250f * ky, 1f, Color(0xFFFF9FD6), Color(0xFFFF5FB4), 0f, t)
+    ojelly(560f, 290f * ky, .8f, Color(0xFF9FD6FF), Color(0xFF4CC3FF), 2f, t)
+    group(y = dy) {
+        path("M0 412Q80 394 170 406T340 402T520 408T640 398V480H0Z", brush = vGrad(398f, 480f, 0f to Color(0xFFF8DFA8), 1f to Color(0xFFC9955A)))
+        crystal(46f, 424f, 1f, Color(0xFFFF7FC2), Color(0xFFC04A98), t, 0f); crystal(82f, 434f, .65f, Color(0xFF7DFFE3), Color(0xFF2DB8A8), t, 1f)
+        crystal(596f, 426f, 1.05f, Color(0xFF7DFFE3), Color(0xFF2DB8A8), t, .5f); crystal(562f, 436f, .6f, Color(0xFFFFE36A), Color(0xFFE0A400), t, 1.5f)
+        okelp(18f, 440f, 120f, Color(0xFF2AA36A), 0f, t); okelp(104f, 440f, 86f, Color(0xFF35C27A), 1f, t); okelp(150f, 444f, 100f, Color(0xFF2AA36A), 2f, t)
+        okelp(618f, 442f, 110f, Color(0xFF35C27A), .5f, t); okelp(528f, 440f, 80f, Color(0xFF2AA36A), 1.5f, t)
+        ocoral(130f, 438f, 1f, Color(0xFFFF7A5A), Color(0xFFFFC2A8)); ocoral(190f, 432f, .8f, Color(0xFFB07CFF), Color(0xFFE2D0FF))
+        ocoral(500f, 438f, 1f, Color(0xFFFF7FC2), Color(0xFFFFD0EC)); ocoral(446f, 434f, .75f, Color(0xFFFFB13C), Color(0xFFFFE7A8)); ocoral(384f, 438f, .6f, Color(0xFF7DFFE3), Color(0xFFD8FFF7))
+        oanem(250f, 440f, 1f, Color(0xFFFF9FD6), Color.White, t); oanem(330f, 438f, .8f, Color(0xFF9FD6FF), Color.White, t)
+        ostar(224f, 462f, 1f, Color(0xFFFF9A3C)); ostar(420f, 466f, .9f, Color(0xFFFF7FC2)); oshell(160f, 466f, .8f); oshell(476f, 462f, .7f)
+    }
     rect(92f, 26f, 456f, 96f, 28f, Color.White.copy(alpha = .2f), Color.White.copy(alpha = .8f), 4f)
     path("M112 38Q320 22 528 38", stroke = Color.White.copy(alpha = .55f), sw = 3f)
     circle(110f, 108f, 5f, stroke = Color.White.copy(alpha = .7f), sw = 2f); circle(530f, 108f, 6f, stroke = Color.White.copy(alpha = .7f), sw = 2f); circle(522f, 94f, 3f, stroke = Color.White.copy(alpha = .7f), sw = 2f)

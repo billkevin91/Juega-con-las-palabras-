@@ -1,6 +1,10 @@
 package com.billkevin91.martypalabras
 
+import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.offset
@@ -28,6 +32,24 @@ fun Modifier.scene(ratio: Float, border: Color = Color(0xFF44399A), radius: Dp =
 /** Coloca un elemento centrado en (x%, y%) de una escena de W×H. */
 fun Modifier.at(W: Dp, H: Dp, xp: Float, yp: Float, w: Dp, h: Dp): Modifier =
     offset(W * (xp / 100f) - w / 2, H * (yp / 100f) - h / 2).size(w, h)
+
+/**
+ * Escena adaptable. En teléfonos (menos de 480dp de ancho) usa la proporción alta, para aprovechar
+ * la pantalla vertical con elementos grandes; en pantallas anchas usa la proporción apaisada.
+ */
+@Composable
+fun SceneBox(
+    wide: Float, tall: Float, bg: Color, border: Color = Color(0xFF44399A), borderWidth: Dp = 2.dp,
+    content: @Composable BoxScope.(W: Dp, H: Dp, isTall: Boolean) -> Unit,
+) {
+    BoxWithConstraints(Modifier.fillMaxWidth()) {
+        val isTall = maxWidth < 480.dp
+        val W = maxWidth
+        val H = W / (if (isTall) tall else wide)
+        val shape = RoundedCornerShape(22.dp)
+        Box(Modifier.size(W, H).clip(shape).background(bg).border(borderWidth, border, shape)) { content(W, H, isTall) }
+    }
+}
 
 @Composable
 fun Dp.asSp(): TextUnit = with(LocalDensity.current) { this@asSp.toSp() }

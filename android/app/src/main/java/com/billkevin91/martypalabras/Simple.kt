@@ -6,6 +6,8 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.BoxWithConstraints
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.ExperimentalLayoutApi
 import androidx.compose.foundation.layout.FlowRow
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -26,6 +28,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.text.TextStyle
+import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import kotlin.math.PI
@@ -54,15 +57,15 @@ fun PicCircle(text: String) {
 
 /** Casilla de letra: 0 vacía, 1 llena (verde), 2 hueco a completar. */
 @Composable
-fun Slot(text: String, kind: Int) {
-    val shape = RoundedCornerShape(14.dp)
+fun Slot(text: String, kind: Int, w: Dp = 46.dp) {
+    val shape = RoundedCornerShape(w * .3f)
     val m = when (kind) {
         1 -> Modifier.clip(shape).background(C.leaf)
         2 -> Modifier.clip(shape).border(3.dp, C.berry, shape)
         else -> Modifier.clip(shape).border(3.dp, C.muted, shape)
     }
-    Box(m.size(46.dp, 56.dp), contentAlignment = Alignment.Center) {
-        Text(text.uppercase(), style = display(28, if (kind == 1) C.onColor else if (kind == 2) C.berry else C.ink))
+    Box(m.size(w, w * 1.22f), contentAlignment = Alignment.Center) {
+        Text(text.uppercase(), style = display(28, if (kind == 1) C.onColor else if (kind == 2) C.berry else C.ink).copy(fontSize = (w * .6f).asSp()))
     }
 }
 
@@ -95,9 +98,14 @@ fun FaltaGame(g: Game, s: Session) {
     LaunchedEffect(Unit) { g.say("¿Qué letra falta? Fíjate bien en las tildes.") }
     QFrame(g, s, hear = true) {
         PicCircle(s.word.pic)
-        CenterFlow {
-            word.forEachIndexed { j, c ->
-                if (j == gap && !filled) Slot("?", 2) else Slot(c, 1)
+        // La palabra siempre en un solo renglón: las casillas se encogen si es larga.
+        BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
+            val sp = 6.dp
+            val w = minOf(46.dp, (maxWidth - sp * (word.size - 1)) / word.size)
+            Row(horizontalArrangement = Arrangement.spacedBy(sp)) {
+                word.forEachIndexed { j, c ->
+                    if (j == gap && !filled) Slot("?", 2, w) else Slot(c, 1, w)
+                }
             }
         }
         CenterFlow {

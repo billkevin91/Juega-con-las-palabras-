@@ -7,7 +7,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -29,7 +28,6 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.graphics.Color
-import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.graphicsLayer
@@ -54,21 +52,27 @@ private class FrogColors(val b: Color, val d: Color, val l: Color, val s: Color,
 
 private data class Pad(val c: String, val x: Float, val y: Float, val rot: Float, val per: Float, val ph: Float, val accent: Boolean)
 
-private val PADS: List<Pad> = run {
-    val rows = listOf(5, 7, 8, 7, 6)
-    val ys = listOf(54f, 61.5f, 69f, 76.5f, 84f)
+/** Estanque alto para teléfonos: casi rectangular, para que quepan nenúfares grandes. */
+private const val SW_TALL = "M320 205C450 205 600 240 612 420C620 600 600 735 320 735C40 735 20 600 28 420C40 240 190 205 320 205Z"
+private const val TALL_H = 760f
+
+private fun pads(rows: List<Int>, ys: List<Float>, dx: Float): List<Pad> {
     val out = mutableListOf<Pad>()
     var idx = 0
     rows.forEachIndexed { r, n ->
         for (j in 0 until n) {
             val i = idx++
-            val x = 50f + (j - (n - 1) / 2f) * 9.4f + (((i * 37) % 11) - 5) / 5f * .7f
-            val y = ys[r] + (((i * 53) % 7) - 3) / 3f * .6f
+            val x = 50f + (j - (n - 1) / 2f) * dx + (((i * 37) % 11) - 5) / 5f * .7f
+            val y = ys[r] + (((i * 53) % 7) - 3) / 3f * .5f
             out += Pad(KEYS[i], x, y, ((((i * 47) % 9) - 4) * 3).toFloat(), 2.6f + (i % 5) * .35f, (i % 7) * .4f, i > 26)
         }
     }
-    out
+    return out
 }
+
+/** Posiciones en % de la escena. Apaisado: 5 filas pequeñas. Alto: 6 filas grandes (la última, las tildes). */
+private val PADS_WIDE = pads(listOf(5, 7, 8, 7, 6), listOf(54f, 61.5f, 69f, 76.5f, 84f), 9.4f)
+private val PADS_TALL = pads(listOf(5, 5, 6, 6, 5, 6), listOf(268f, 346f, 424f, 502f, 580f, 658f).map { it / TALL_H * 100f }, 14.2f)
 
 @Composable
 fun PantanoGame(g: Game, s: Session) {
@@ -122,25 +126,25 @@ fun PantanoGame(g: Game, s: Session) {
     }
 
     QFrame(g, s) {
-        BoxWithConstraints(Modifier.scene(4f / 3f).background(Color(0xFF12402F))) {
-            val W = maxWidth
-            val H = maxHeight
+        SceneBox(4f / 3f, 640f / TALL_H, Color(0xFF12402F)) { W, H, tall ->
             val u = W / 100f
+            val px = W / 640f
+            val vh = if (tall) TALL_H else 480f
             Canvas(Modifier.fillMaxSize()) {
                 val t = time.value
-                viewBox(640f, 480f) {
-                    swamp(t, won, fxKind, t - fxAt)
+                viewBox(640f, vh) {
+                    swamp(t, won, fxKind, t - fxAt, tall)
                     ripples.forEach { r ->
                         val p = (t - r.at) / .8f
                         if (p in 0f..1f) {
-                            val sc = lerp(.4f, 1.6f, p)
-                            ellipse(r.x * 6.4f, r.y * 4.8f, 38f * sc, 19f * sc, stroke = if (r.bad) Color(0xFF0B2E24) else Color.White.copy(alpha = .75f), sw = 3f, alpha = 1f - p)
+                            val sc = lerp(.4f, 1.6f, p) * if (tall) 1.5f else 1f
+                            ellipse(r.x * 6.4f, r.y * vh / 100f, 38f * sc, 19f * sc, stroke = if (r.bad) Color(0xFF0B2E24) else Color.White.copy(alpha = .75f), sw = 3f, alpha = 1f - p)
                         }
                     }
                 }
             }
             // Medalla con el dibujo
-            Box(Modifier.at(W, H, 7.2f, 20.8f, u * 11, u * 11), contentAlignment = Alignment.Center) {
+            Box(Modifier.offset(px * 46 - u * 5.5f, px * 100 - u * 5.5f).size(u * 11), contentAlignment = Alignment.Center) {
                 Text(s.word.pic, style = TextStyle(fontSize = (u * 7).asSp()))
             }
             // Vidas
@@ -153,7 +157,7 @@ fun PantanoGame(g: Game, s: Session) {
             }
             // Letras del cartel
             Row(
-                Modifier.offset(y = H * .2167f - u * 4).align(Alignment.TopCenter),
+                Modifier.offset(y = px * 104 - u * 4).align(Alignment.TopCenter),
                 horizontalArrangement = Arrangement.spacedBy(u * .7f),
             ) {
                 word.forEach { c ->
@@ -183,11 +187,13 @@ fun PantanoGame(g: Game, s: Session) {
                 }
             }
             // Nenúfares con letras
-            PADS.forEach { p ->
+            val padW = if (tall) u * 13f else u * 8.6f
+            val padH = if (tall) u * 10.6f else u * 7f
+            (if (tall) PADS_TALL else PADS_WIDE).forEach { p ->
                 val st = used[p.c] ?: 0
                 val sink by animateFloatAsState(if (st == 2) 1f else 0f, tween(800), label = "sink")
                 Box(
-                    Modifier.at(W, H, p.x, p.y, u * 8.6f, u * 7f).graphicsLayer {
+                    Modifier.at(W, H, p.x, p.y, padW, padH).graphicsLayer {
                         val t = time.value
                         val bob = lerp(-.015f, .025f, swing(t + p.ph, p.per))
                         translationY = (bob + .4f * sink) * size.height
@@ -205,7 +211,7 @@ fun PantanoGame(g: Game, s: Session) {
                     Text(
                         p.c, modifier = Modifier.offset(y = -u * .4f),
                         style = TextStyle(
-                            fontFamily = Baloo, fontWeight = FontWeight.ExtraBold, fontSize = (u * 4.6f).asSp(),
+                            fontFamily = Baloo, fontWeight = FontWeight.ExtraBold, fontSize = (if (tall) u * 7f else u * 4.6f).asSp(),
                             color = if (st == 1) Color(0xFFFFF9B0) else Color.White,
                             shadow = androidx.compose.ui.graphics.Shadow(Color(0xE60A3214), blurRadius = 6f),
                         ),
@@ -292,9 +298,19 @@ private fun DrawScope.frog(x: Float, y: Float, s: Float, c: FrogColors, d: Float
     }
 }
 
-private val POND_CLIP: Path get() = Paths.of(SW_P)
+private val FROGS = listOf(
+    FrogColors(Color(0xFFD8479A), Color(0xFF8B2A66), Color(0xFFFFB7DC), Color(0xFFFFE36A), Color(0xFF7DFFE3), 2),
+    FrogColors(Color(0xFF27B7D8), Color(0xFF14799A), Color(0xFFBFF4FF), Color.White, Color(0xFFFFE36A), 3),
+    FrogColors(Color(0xFFFF9A3C), Color(0xFFC4601A), Color(0xFFFFE0B0), Color(0xFF7A3FB0), Color(0xFFFF7FC2), 2),
+    FrogColors(Color(0xFF8F5BE8), Color(0xFF5A34A8), Color(0xFFDCC8FF), Color(0xFF7DFFB0), Color(0xFFFFE36A), 3),
+)
 
-private fun DrawScope.swamp(t: Float, won: Boolean, fx: Int, fxT: Float) {
+private fun DrawScope.swamp(t: Float, won: Boolean, fx: Int, fxT: Float, tall: Boolean) {
+    val vh = if (tall) TALL_H else 480f
+    val dy = vh - 480f
+    val pond = if (tall) SW_TALL else SW_P
+    // En la escena alta el agua ocupa más: reparte ondas y reflejos por todo el estanque.
+    fun py(y: Float) = if (tall) 205f + (y - 198f) * 1.95f else y
     rect(0f, 0f, 640f, 215f, brush = vGrad(0f, 215f, 0f to Color(0xFF151F5C), .55f to Color(0xFF6A3FB0), 1f to Color(0xFFF48BB4)))
     listOf(40f to 28f, 96f to 70f, 210f to 22f, 250f to 64f, 330f to 36f, 400f to 18f, 455f to 58f, 610f to 30f, 300f to 92f, 20f to 110f)
         .forEachIndexed { i, (x, y) -> circle(x, y, if (i % 2 == 0) 1.4f else 1f, Color.White, alpha = .85f) }
@@ -310,26 +326,28 @@ private fun DrawScope.swamp(t: Float, won: Boolean, fx: Int, fxT: Float) {
     group(x = 12f * wave(t, 28f)) {
         rect(-20f, 168f, 680f, 40f, brush = vGrad(168f, 208f, 0f to Color(0x00FFD0EC), .5f to Color(0x73FFD0EC), 1f to Color(0x00FFD0EC)))
     }
-    path("M0 192Q160 172 320 190T640 188V480H0Z", brush = vGrad(190f, 480f, 0f to Color(0xFF3C8A45), 1f to Color(0xFF1B3D2C)))
+    path(if (tall) "M0 192Q160 172 320 190T640 188V760H0Z" else "M0 192Q160 172 320 190T640 188V480H0Z", brush = vGrad(190f, vh, 0f to Color(0xFF3C8A45), 1f to Color(0xFF1B3D2C)))
     mush(30f, 262f, 1.15f, Color(0xFFE8508A), Color(0xFFFFE8F2)); mush(612f, 248f, 1.05f, Color(0xFF7A4FD8), Color(0xFFE9DDFF))
     mush(96f, 232f, .55f, Color(0xFF27B7D8), Color(0xFFE6FBFF)); mush(560f, 226f, .6f, Color(0xFFFF9A3C), Color(0xFFFFF0D6))
     // estanque
-    group(0f, 16f) { path(SW_P, Color(0xFF4A3320)) }
-    path(SW_P, Color(0xFF76AD4E), Color(0xFF4D7D36), 8f)
-    group(9.6f, 9.9f, .97f) {
-        path(SW_P, brush = rGrad(320f, 334f, 350f, 0f to Color(0xFF4B9A52), .6f to Color(0xFF1F6A48), 1f to Color(0xFF0F3A38)))
-        clipPath(POND_CLIP) {
+    val cy = if (tall) 470f else 334f
+    group(0f, 16f) { path(pond, Color(0xFF4A3320)) }
+    path(pond, Color(0xFF76AD4E), Color(0xFF4D7D36), 8f)
+    group(9.6f, cy * .03f, .97f) {
+        path(pond, brush = rGrad(320f, cy, if (tall) 430f else 350f, 0f to Color(0xFF4B9A52), .6f to Color(0xFF1F6A48), 1f to Color(0xFF0F3A38)))
+        clipPath(Paths.of(pond)) {
             listOf(Triple(220f, 300f, 0f), Triple(440f, 360f, -3f), Triple(300f, 420f, -6f)).forEach { (x, y, d) ->
-                ellipse(x + 12f * wave(t + d, 18f), y, 90f, 9f, Color(0xFF9BE07A), alpha = .11f)
+                ellipse(x + 12f * wave(t + d, 18f), py(y), 90f, 9f, Color(0xFF9BE07A), alpha = .11f)
             }
             listOf(Triple(180f, 330f, 0f), Triple(450f, 300f, 1.3f), Triple(320f, 432f, 2.1f), Triple(520f, 380f, 3f), Triple(150f, 390f, .7f)).forEach { (x, y, d) ->
                 val p = ((t + d) / 4f) % 1f
-                ellipse(x, y, 46f * lerp(.2f, 1f, p), 14f * lerp(.2f, 1f, p), stroke = Color.White.copy(alpha = .35f), sw = 1.5f, alpha = 1f - p)
+                ellipse(x, py(y), 46f * lerp(.2f, 1f, p), 14f * lerp(.2f, 1f, p), stroke = Color.White.copy(alpha = .35f), sw = 1.5f, alpha = 1f - p)
             }
         }
     }
-    dpad(72f, 334f, .42f); lotus(72f, 328f, .5f); dpad(572f, 332f, .4f); lotus(572f, 326f, .46f); dpad(258f, 228f, .3f)
-    dpad(392f, 228f, .3f); lotus(392f, 224f, .36f); dpad(268f, 454f, .34f); dpad(384f, 456f, .3f); lotus(384f, 452f, .36f)
+    if (!tall) { dpad(72f, 334f, .42f); lotus(72f, 328f, .5f); dpad(572f, 332f, .4f); lotus(572f, 326f, .46f) }
+    dpad(258f, 228f, .3f); dpad(392f, 228f, .3f); lotus(392f, 224f, .36f)
+    dpad(268f, 454f + dy, .34f); dpad(384f, 456f + dy, .3f); lotus(384f, 452f + dy, .36f)
     // cartel de madera
     val wood = vGrad(46f, 218f, 0f to Color(0xFFB9824A), 1f to Color(0xFF8A5A2E))
     rect(170f, 150f, 22f, 68f, 5f, brush = wood); rect(448f, 150f, 22f, 68f, 5f, brush = wood)
@@ -352,10 +370,14 @@ private fun DrawScope.swamp(t: Float, won: Boolean, fx: Int, fxT: Float) {
     circle(116f, 92f, 5f, Color(0xFF3FBF5A)); circle(150f, 82f, 5f, Color(0xFF3FBF5A)); circle(176f, 84f, 4.5f, Color(0xFF3FBF5A))
     circle(46f, 100f, 36f, Color(0xFFFFF7D6), Color(0xFFE8B030), 6f)
     // ranas alienígenas
-    rect(10f, 436f, 104f, 22f, 11f, Color(0xFF6B4524)); ellipse(20f, 447f, 7f, 9f, Color(0xFF8A5A2E)); ellipse(590f, 448f, 40f, 12f, Color(0xFF6D6A86))
-    frog(48f, 292f, .9f, FrogColors(Color(0xFFD8479A), Color(0xFF8B2A66), Color(0xFFFFB7DC), Color(0xFFFFE36A), Color(0xFF7DFFE3), 2), 0f, t, fx, fxT)
-    frog(598f, 296f, .85f, FrogColors(Color(0xFF27B7D8), Color(0xFF14799A), Color(0xFFBFF4FF), Color.White, Color(0xFFFFE36A), 3), -1.2f, t, fx, fxT)
-    frog(64f, 438f, 1.15f, FrogColors(Color(0xFFFF9A3C), Color(0xFFC4601A), Color(0xFFFFE0B0), Color(0xFF7A3FB0), Color(0xFFFF7FC2), 2), -2.1f, t, fx, fxT)
-    frog(592f, 444f, .95f, FrogColors(Color(0xFF8F5BE8), Color(0xFF5A34A8), Color(0xFFDCC8FF), Color(0xFF7DFFB0), Color(0xFFFFE36A), 3), -.6f, t, fx, fxT)
-    reed(14f, 476f, 70f); reed(30f, 478f, 92f); reed(50f, 476f, 60f); reed(590f, 476f, 64f); reed(610f, 478f, 96f); reed(628f, 476f, 74f)
+    group(y = dy) {
+        rect(10f, 436f, 104f, 22f, 11f, Color(0xFF6B4524)); ellipse(20f, 447f, 7f, 9f, Color(0xFF8A5A2E)); ellipse(590f, 448f, 40f, 12f, Color(0xFF6D6A86))
+    }
+    frog(48f, 292f, .9f, FROGS[0], 0f, t, fx, fxT)
+    frog(598f, 296f, .85f, FROGS[1], -1.2f, t, fx, fxT)
+    frog(64f, 438f + dy, 1.15f, FROGS[2], -2.1f, t, fx, fxT)
+    frog(592f, 444f + dy, .95f, FROGS[3], -.6f, t, fx, fxT)
+    group(y = dy) {
+        reed(14f, 476f, 70f); reed(30f, 478f, 92f); reed(50f, 476f, 60f); reed(590f, 476f, 64f); reed(610f, 478f, 96f); reed(628f, 476f, 74f)
+    }
 }

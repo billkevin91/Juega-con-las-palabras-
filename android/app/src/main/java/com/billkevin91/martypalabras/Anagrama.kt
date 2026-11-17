@@ -5,7 +5,6 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
-import androidx.compose.foundation.layout.BoxWithConstraints
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.offset
@@ -140,7 +139,11 @@ private fun DrawScope.island(x: Float, y: Float, w: Float, d: Float, t: Float, e
         extra()
     }
 
-private fun DrawScope.meadow(t: Float, won: Boolean) {
+private const val TALL_MEADOW = 600f
+
+/** [vh] es la altura del dibujo: 360 apaisado, 600 alto (con más pradera para dos filas de conejitos). */
+private fun DrawScope.meadow(t: Float, won: Boolean, vh: Float) {
+    val tall = vh > 360f
     rect(0f, 0f, 640f, 360f, brush = vGrad(0f, 360f, 0f to Color(0xFF5B4BD8), .4f to Color(0xFFA77CF0), .75f to Color(0xFFFF9FD0), 1f to Color(0xFFFFD9A8)))
     listOf(Triple(30f, 20f, 1.4f), Triple(150f, 36f, 1.1f), Triple(260f, 14f, 1.3f), Triple(400f, 30f, 1f), Triple(470f, 12f, 1.4f), Triple(620f, 90f, 1.2f), Triple(16f, 110f, 1f), Triple(300f, 120f, 1f))
         .forEachIndexed { i, (x, y, r) -> circle(x, y, r * 1.3f, Color.White, alpha = lerp(.3f, 1f, swing(t, 1.2f, i * .19f))) }
@@ -165,15 +168,21 @@ private fun DrawScope.meadow(t: Float, won: Boolean) {
     portal(92f, 170f, 40f, Color(0xFF7DFFE3), Color(0xFF2DB8A8), Color(0xFFFFE36A), true, t, won)
     path("M-10 370V246Q110 206 230 232T470 220T650 230V370Z", brush = vGrad(206f, 370f, 0f to Color(0xFF6FE0C0), 1f to Color(0xFF2A9A9A)))
     path("M-10 370V246Q110 206 230 232T470 220T650 230V370Z", stroke = Ink, sw = 3f)
+    if (tall) rect(-10f, 366f, 660f, vh - 356f, fill = Color(0xFF2A9A9A))
     flower(30f, 262f, 30f, Color(0xFFFF7FC2), 0f, t); flower(610f, 256f, 34f, Color(0xFF7DFFE3), 1f, t)
     flower(250f, 240f, 22f, Color(0xFFFFE36A), 2f, t); flower(420f, 232f, 24f, Color(0xFFFF9A3C), .6f, t)
-    path("M-10 370V292Q160 262 320 286T650 280V370Z", brush = vGrad(262f, 370f, 0f to Color(0xFF9DF07A), 1f to Color(0xFF3AA860)))
-    path("M-10 370V292Q160 262 320 286T650 280V370Z", stroke = Ink, sw = 3f)
-    listOf(24f, 40f, 600f, 616f, 180f, 470f).forEachIndexed { j, x ->
-        val o = if (j % 2 == 1) 5f else -5f
-        path("M$x 352Q${x + o} 338 ${x + o * .4f} 326", stroke = Color(0xFF2F8A4A), sw = 3f)
+    // colina cercana: en la escena alta baja para dejar sitio a la primera fila de conejitos
+    val nearDy = if (tall) 135f else 0f
+    if (tall) rect(-10f, 366f + nearDy, 660f, vh - 356f - nearDy, fill = Color(0xFF3AA860))
+    group(y = nearDy) {
+        path("M-10 370V292Q160 262 320 286T650 280V370Z", brush = vGrad(262f, 370f, 0f to Color(0xFF9DF07A), 1f to Color(0xFF3AA860)))
+        path("M-10 370V292Q160 262 320 286T650 280V370Z", stroke = Ink, sw = 3f)
+        listOf(24f, 40f, 600f, 616f, 180f, 470f).forEachIndexed { j, x ->
+            val o = if (j % 2 == 1) 5f else -5f
+            path("M$x 352Q${x + o} 338 ${x + o * .4f} 326", stroke = Color(0xFF2F8A4A), sw = 3f)
+        }
+        flower(18f, 340f, 26f, Color(0xFFC9B0FF), 1.5f, t); flower(624f, 342f, 30f, Color(0xFFFFE36A), .3f, t)
     }
-    flower(18f, 340f, 26f, Color(0xFFC9B0FF), 1.5f, t); flower(624f, 342f, 30f, Color(0xFFFFE36A), .3f, t)
 }
 
 @Composable
@@ -224,18 +233,18 @@ fun AnagramaGame(g: Game, s: Session) {
     }
 
     QFrame(g, s, hear = true) {
-        BoxWithConstraints(Modifier.scene(16f / 9f, Ink, 22.dp, 3.dp).background(Color(0xFFA77CF0))) {
-            val W = maxWidth
-            val H = maxHeight
+        SceneBox(16f / 9f, 640f / TALL_MEADOW, Color(0xFFA77CF0), Ink, 3.dp) { W, H, tall ->
             val q = W / 100f
-            Canvas(Modifier.fillMaxSize()) { viewBox(640f, 360f) { meadow(time.value, won) } }
-            Box(Modifier.at(W, H, 14.4f, 47.2f, q * 11, q * 11), contentAlignment = Alignment.Center) {
+            val px = W / 640f
+            Canvas(Modifier.fillMaxSize()) { viewBox(640f, if (tall) TALL_MEADOW else 360f) { meadow(time.value, won, if (tall) TALL_MEADOW else 360f) } }
+            Box(Modifier.offset(px * 92 - q * 5.5f, px * 170 - q * 5.5f).size(q * 11), contentAlignment = Alignment.Center) {
                 Text(s.word.pic, style = TextStyle(fontSize = (q * 6).asSp()))
             }
             // Casillas sobre la isla
-            val sz = q * min(8f, 72f / n / 1.14f)
+            val sz = q * if (tall) min(10.5f, 90f / n / 1.14f) else min(8f, 72f / n / 1.14f)
             val sGap = sz * .14f
-            Row(Modifier.align(Alignment.TopCenter).offset(y = H * .15f - sz * .575f), horizontalArrangement = Arrangement.spacedBy(sGap)) {
+            val slotY = px * 54
+            Row(Modifier.align(Alignment.TopCenter).offset(y = slotY - sz * .575f), horizontalArrangement = Arrangement.spacedBy(sGap)) {
                 for (j in 0 until n) {
                     val c = filled[j]
                     val shape = RoundedCornerShape(sz * .2f)
@@ -260,56 +269,66 @@ fun AnagramaGame(g: Game, s: Session) {
                     }
                 }
             }
-            // Conejitos
-            val u = q * min(14f, 88f / n / 1.04f)
+            // Conejitos: una fila en apaisado; en teléfono, dos filas grandes si la palabra es larga.
+            val rowA = if (tall && n > 4) (n + 1) / 2 else n
+            val perRow = maxOf(rowA, n - rowA)
+            val u = q * if (tall) min(24f, 92f / perRow / 1.04f) else min(14f, 88f / n / 1.04f)
             val gap = u * .04f
-            Row(Modifier.align(Alignment.BottomCenter).offset(y = -H * .025f), horizontalArrangement = Arrangement.spacedBy(gap)) {
-                order.forEachIndexed { i, c ->
-                    val r = ((((i * 37) % 7) - 3) * 2).toFloat()
+            order.forEachIndexed { i, c ->
+                val first = i < rowA
+                val m = if (first) rowA else n - rowA
+                val k = if (first) i else i - rowA
+                val cx = W / 2 + (u + gap) * (k - (m - 1) / 2f)
+                val bottom = when {
+                    !tall -> H * .975f
+                    rowA == n -> px * 548
+                    first -> px * 418
+                    else -> px * 590
+                }
+                val r = ((((i * 37) % 7) - 3) * 2).toFloat()
+                Box(
+                    Modifier.offset(cx - u / 2, bottom - u * 1.3f).size(u, u * 1.3f).graphicsLayer {
+                        val t = time.value
+                        transformOrigin = TransformOrigin(.5f, 1f)
+                        val hop = hops[i]
+                        if (used[i] == true && !won) { alpha = 0f; return@graphicsLayer }
+                        if (hop != null) {
+                            val p = ((t - hop.first) / .6f).coerceIn(0f, 1f)
+                            val dx = (W / 2 + (sz + sGap) * (hop.second - (n - 1) / 2f) - cx).toPx()
+                            val dy = (slotY - (bottom - u * .65f)).toPx()
+                            translationX = dx * p
+                            translationY = dy * p - u.toPx() * .8f * sin(PI.toFloat() * p)
+                            val sc = lerp(1f, .25f, p)
+                            scaleX = sc; scaleY = sc
+                            rotationZ = -10f * sin(PI.toFloat() * p)
+                            alpha = lerp(1f, .3f, p)
+                            return@graphicsLayer
+                        }
+                        if (won) {
+                            val f = swing(t, .5f, i * .16f)
+                            translationY = -size.height * .14f * f
+                            scaleX = lerp(1.03f, .98f, f); scaleY = lerp(.97f, 1.03f, f)
+                            return@graphicsLayer
+                        }
+                        val no = t - (nos[i] ?: -9f)
+                        if (no in 0f..0.45f) rotationZ = -8f * sin(no / .45f * 2 * PI.toFloat())
+                        val b = swing(t, 1.3f, i * .1f)
+                        scaleX = lerp(1f, 1.03f, b); scaleY = lerp(1f, .97f, b)
+                    }.tap(enabled = used[i] != true) { bunny(i) },
+                ) {
+                    Canvas(Modifier.fillMaxSize()) {
+                        val t = time.value
+                        val no = t - (nos[i] ?: -9f)
+                        val droop = if (no in 0f..1f) sin(no * PI.toFloat()) else 0f
+                        group(s = size.width / 100f) { rabbit(i, t, droop) }
+                    }
                     Box(
-                        Modifier.size(u, u * 1.3f).graphicsLayer {
-                            val t = time.value
-                            transformOrigin = TransformOrigin(.5f, 1f)
-                            val hop = hops[i]
-                            if (used[i] == true && !won) { alpha = 0f; return@graphicsLayer }
-                            if (hop != null) {
-                                val p = ((t - hop.first) / .6f).coerceIn(0f, 1f)
-                                val dx = ((sz + sGap) * (hop.second - (n - 1) / 2f) - (u + gap) * (i - (n - 1) / 2f)).toPx()
-                                val dy = ((H * .15f) - (H * .975f - u * .65f)).toPx()
-                                translationX = dx * p
-                                translationY = dy * p - u.toPx() * .8f * sin(PI.toFloat() * p)
-                                val k = lerp(1f, .25f, p)
-                                scaleX = k; scaleY = k
-                                rotationZ = -10f * sin(PI.toFloat() * p)
-                                alpha = lerp(1f, .3f, p)
-                                return@graphicsLayer
-                            }
-                            if (won) {
-                                val f = swing(t, .5f, i * .16f)
-                                translationY = -size.height * .14f * f
-                                scaleX = lerp(1.03f, .98f, f); scaleY = lerp(.97f, 1.03f, f)
-                                return@graphicsLayer
-                            }
-                            val no = t - (nos[i] ?: -9f)
-                            if (no in 0f..0.45f) rotationZ = -8f * sin(no / .45f * 2 * PI.toFloat())
-                            val b = swing(t, 1.3f, i * .1f)
-                            scaleX = lerp(1f, 1.03f, b); scaleY = lerp(1f, .97f, b)
-                        }.tap(enabled = used[i] != true) { bunny(i) },
+                        Modifier.align(Alignment.TopCenter).offset(y = u * 1.3f * .64f).size(u * .52f, u * 1.3f * .3f)
+                            .graphicsLayer { rotationZ = r }.clip(RoundedCornerShape(u * .07f)).background(SIGNC[i % SIGNC.size])
+                            .border(maxOf(u * .03f, 2.dp), Ink, RoundedCornerShape(u * .07f)),
+                        contentAlignment = Alignment.Center,
                     ) {
-                        Canvas(Modifier.fillMaxSize()) {
-                            val t = time.value
-                            val no = t - (nos[i] ?: -9f)
-                            val droop = if (no in 0f..1f) sin(no * PI.toFloat()) else 0f
-                            group(s = size.width / 100f) { rabbit(i, t, droop) }
-                        }
-                        Box(
-                            Modifier.align(Alignment.TopCenter).offset(y = u * 1.3f * .64f).size(u * .52f, u * 1.3f * .3f)
-                                .graphicsLayer { rotationZ = r }.clip(RoundedCornerShape(u * .07f)).background(SIGNC[i % SIGNC.size])
-                                .border(maxOf(u * .03f, 2.dp), Ink, RoundedCornerShape(u * .07f)),
-                            contentAlignment = Alignment.Center,
-                        ) {
-                            Text(c, style = TextStyle(fontFamily = Baloo, fontWeight = FontWeight.ExtraBold, fontSize = (u * .3f).asSp(), color = Ink))
-                        }
+                        Text(c, style = TextStyle(fontFamily = Baloo, fontWeight = FontWeight.ExtraBold, fontSize = (u * .3f).asSp(), color = Ink))
                     }
                 }
             }
