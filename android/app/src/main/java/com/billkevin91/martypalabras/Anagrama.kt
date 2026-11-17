@@ -141,6 +141,13 @@ private fun DrawScope.island(x: Float, y: Float, w: Float, d: Float, t: Float, e
 
 private const val TALL_MEADOW = 600f
 
+/** Letra señuelo para el modo difícil: una que se confunde con alguna de la palabra y que no está en ella. */
+private fun decoyFor(word: List<String>): String {
+    val pairs = mapOf("B" to "V", "V" to "B", "S" to "Z", "Z" to "S", "C" to "S", "G" to "J", "J" to "G", "Y" to "L", "L" to "Y", "N" to "Ñ", "Ñ" to "N", "I" to "Y", "U" to "Ü", "R" to "L")
+    val options = word.mapNotNull { pairs[norm(it)] }.filter { it !in word }
+    return options.randomOrNull() ?: listOf("B", "V", "S", "Z", "H").first { it !in word }
+}
+
 /** [vh] es la altura del dibujo: 360 apaisado, 600 alto (con más pradera para dos filas de conejitos). */
 private fun DrawScope.meadow(t: Float, won: Boolean, vh: Float) {
     val tall = vh > 360f
@@ -190,9 +197,11 @@ private fun DrawScope.meadow(t: Float, won: Boolean, vh: Float) {
 fun AnagramaGame(g: Game, s: Session) {
     val word = remember { letters(s.word.text.uppercase()) }
     val order = remember {
-        var sh = word.shuffled()
+        // Difícil: un conejito trae una letra que no va (una que se confunde con alguna de la palabra).
+        val extra = if (s.level == Level.DIFICIL) listOf(decoyFor(word)) else emptyList()
+        var sh = (word + extra).shuffled()
         var n = 0
-        while (sh == word && n++ < 10) sh = word.shuffled()
+        while (sh.take(word.size) == word && n++ < 10) sh = (word + extra).shuffled()
         sh
     }
     val n = word.size
@@ -203,6 +212,8 @@ fun AnagramaGame(g: Game, s: Session) {
     val hops = remember { mutableStateMapOf<Int, Pair<Float, Int>>() }
     val nos = remember { mutableStateMapOf<Int, Float>() }
     var popAt by remember { mutableFloatStateOf(-9f) }
+    var help by remember { mutableStateOf(false) }
+    val nr = order.size
     val time = rememberTime()
     val scope = rememberCoroutineScope()
 
@@ -215,9 +226,11 @@ fun AnagramaGame(g: Game, s: Session) {
             g.wrong()
             g.say("¡Ese conejito no va ahí! Busca la letra que sigue.")
             nos[i] = time.value
+            if (s.level == Level.FACIL) help = true
             return
         }
         val slot = pos
+        help = false
         pos++
         g.tone(520 + pos * 40)
         hops[i] = time.value to slot
@@ -271,18 +284,18 @@ fun AnagramaGame(g: Game, s: Session) {
                 }
             }
             // Conejitos: una fila en apaisado; en teléfono, dos filas grandes si la palabra es larga.
-            val rowA = if (tall && n > 4) (n + 1) / 2 else n
-            val perRow = maxOf(rowA, n - rowA)
-            val u = q * if (tall) min(24f, 92f / perRow / 1.04f) else min(14f, 88f / n / 1.04f)
+            val rowA = if (tall && nr > 4) (nr + 1) / 2 else nr
+            val perRow = maxOf(rowA, nr - rowA)
+            val u = q * if (tall) min(24f, 92f / perRow / 1.04f) else min(14f, 88f / nr / 1.04f)
             val gap = u * .04f
             order.forEachIndexed { i, c ->
                 val first = i < rowA
-                val m = if (first) rowA else n - rowA
+                val m = if (first) rowA else nr - rowA
                 val k = if (first) i else i - rowA
                 val cx = W / 2 + (u + gap) * (k - (m - 1) / 2f)
                 val bottom = when {
                     !tall -> H * .975f
-                    rowA == n -> px * 548
+                    rowA == nr -> px * 548
                     first -> px * 418
                     else -> px * 590
                 }
@@ -321,6 +334,10 @@ fun AnagramaGame(g: Game, s: Session) {
                         val t = time.value
                         val no = t - (nos[i] ?: -9f)
                         val droop = if (no in 0f..1f) sin(no * PI.toFloat()) else 0f
+                        // Ayuda del modo fácil: brilla el conejito que sigue.
+                        if (help && pos < n && c == word[pos] && used[i] != true) {
+                            drawCircle(Color(0xFFFFF36A), size.width * .62f, Offset(size.width / 2, size.height * .62f), alpha = lerp(.25f, .6f, swing(t, .5f)))
+                        }
                         group(s = size.width / 100f) { rabbit(i, t, droop) }
                     }
                     Box(

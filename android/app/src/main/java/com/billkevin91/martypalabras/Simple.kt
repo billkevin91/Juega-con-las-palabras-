@@ -55,20 +55,6 @@ fun PicCircle(text: String) {
     ) { Text(text, style = TextStyle(fontSize = 70.sp, color = C.muted, fontFamily = Baloo)) }
 }
 
-/** Casilla de letra: 0 vacía, 1 llena (verde), 2 hueco a completar. */
-@Composable
-fun Slot(text: String, kind: Int, w: Dp = 46.dp) {
-    val shape = RoundedCornerShape(w * .3f)
-    val m = when (kind) {
-        1 -> Modifier.clip(shape).background(C.leaf)
-        2 -> Modifier.clip(shape).border(3.dp, C.berry, shape)
-        else -> Modifier.clip(shape).border(3.dp, C.muted, shape)
-    }
-    Box(m.size(w, w * 1.22f), contentAlignment = Alignment.Center) {
-        Text(text.uppercase(), style = display(28, if (kind == 1) C.onColor else if (kind == 2) C.berry else C.ink).copy(fontSize = (w * .6f).asSp()))
-    }
-}
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CenterFlow(content: @Composable () -> Unit) {
@@ -79,82 +65,3 @@ fun CenterFlow(content: @Composable () -> Unit) {
     ) { content() }
 }
 
-/* Letra perdida: elige la letra que falta. */
-@Composable
-fun FaltaGame(g: Game, s: Session) {
-    val word = remember { letters(s.word.text.uppercase()) }
-    val gap = remember { word.indices.random() }
-    val miss = word[gap]
-    val opts = remember {
-        val set = linkedSetOf(miss)
-        val base = norm(miss)
-        if (base != miss) set.add(base)
-        val abc = letters("ABCDEFGHILMNOPRSTUV")
-        while (set.size < 3) set.add(abc.random())
-        set.toList().shuffled()
-    }
-    var filled by remember { mutableStateOf(false) }
-    val shakes = remember { mutableStateMapOf<String, Int>() }
-    LaunchedEffect(Unit) { g.say("¿Qué letra falta? Fíjate bien en las tildes.") }
-    QFrame(g, s, hear = true) {
-        PicCircle(s.word.pic)
-        // La palabra siempre en un solo renglón: las casillas se encogen si es larga.
-        BoxWithConstraints(Modifier.fillMaxWidth(), contentAlignment = Alignment.Center) {
-            val sp = 6.dp
-            val w = minOf(46.dp, (maxWidth - sp * (word.size - 1)) / word.size)
-            Row(horizontalArrangement = Arrangement.spacedBy(sp)) {
-                word.forEachIndexed { j, c ->
-                    if (j == gap && !filled) Slot("?", 2, w) else Slot(c, 1, w)
-                }
-            }
-        }
-        CenterFlow {
-            opts.forEachIndexed { i, c ->
-                Box(Modifier.shake(shakes[c] ?: 0)) {
-                    OptTile(c, C.tiles[(i + 1) % 5]) {
-                        if (s.locked) return@OptTile
-                        if (c == miss) {
-                            filled = true
-                            g.win(!s.tried)
-                        } else {
-                            shakes[c] = (shakes[c] ?: 0) + 1
-                            g.wrong()
-                        }
-                    }
-                }
-            }
-        }
-    }
-}
-
-/* Lectura: toca la palabra que corresponde al dibujo. */
-@Composable
-fun LeeGame(g: Game, s: Session) {
-    val opts = remember {
-        (listOf(s.word.text) + WORDS.filter { it.text != s.word.text }.shuffled().take(2).map { it.text }).shuffled()
-    }
-    var marks by remember { mutableStateOf(mapOf<String, Int>()) }
-    var shake by remember { mutableIntStateOf(0) }
-    var shaken by remember { mutableStateOf("") }
-    LaunchedEffect(Unit) { g.say("Lee y toca la palabra del dibujo.") }
-    QFrame(g, s, hear = true) {
-        PicCircle(s.word.pic)
-        CenterFlow {
-            opts.forEachIndexed { i, x ->
-                Box(Modifier.shake(if (shaken == x) shake else 0)) {
-                    OptTile(x, C.tiles[(i + 2) % 5], state = marks[x] ?: 0, wide = true) {
-                        if (s.locked) return@OptTile
-                        if (x == s.word.text) {
-                            marks = marks + (x to 1)
-                            g.win(!s.tried)
-                        } else {
-                            shaken = x
-                            shake++
-                            g.wrong()
-                        }
-                    }
-                }
-            }
-        }
-    }
-}

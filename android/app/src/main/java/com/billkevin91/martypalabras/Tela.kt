@@ -204,7 +204,9 @@ fun TelaGame(g: Game, s: Session) {
     var marks by remember { mutableStateOf<String?>(null) }
     var att by remember { mutableIntStateOf(0) }
     var won by remember { mutableStateOf(false) }
-    var clue by remember { mutableStateOf(!sp) }
+    // Fácil: el dibujo se ve desde el inicio. Difícil: sin pista (salvo que el teléfono no pueda hablar).
+    var clue by remember { mutableStateOf(!sp || s.level == Level.FACIL) }
+    val revealAfter = when (s.level) { Level.FACIL -> 2; Level.NORMAL -> 3; Level.DIFICIL -> 4 }
     var fxKind by remember { mutableIntStateOf(0) }
     var fxAt by remember { mutableFloatStateOf(-9f) }
     val born = remember { mutableStateListOf<Float>() }
@@ -267,7 +269,7 @@ fun TelaGame(g: Game, s: Session) {
         marks = null
     }
 
-    QFrame(g, s, hear = sp, clue = if (sp) clue else null, onClue = { clue = true }) {
+    QFrame(g, s, hear = sp, clue = if (sp && s.level != Level.DIFICIL) clue else null, onClue = { clue = true }) {
         Column(Modifier.fillMaxWidth()) {
             BoxWithConstraints(Modifier.scene(16f / 9f, Ink, 22.dp, 3.dp).background(Color(0xFF2A1460))) {
                 val W = maxWidth
@@ -357,7 +359,7 @@ fun TelaGame(g: Game, s: Session) {
                 }
             }
         }
-        if (att >= 3 && !won) {
+        if (att >= revealAfter && !won) {
             Ghost("Ver respuesta") {
                 if (s.locked) return@Ghost
                 s.locked = true

@@ -12,6 +12,7 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
@@ -64,17 +65,54 @@ fun HomeScreen(g: Game) {
         Canvas(
             Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(22.dp)).border(3.dp, Ink, RoundedCornerShape(22.dp))
         ) { heroScene(t, tm) }
+        LevelPicker(g)
         ModeButton({ PlanetBall(Color(0xFFFFE07A), Color(0xFFE08A00), true, 56.dp) },
-            "Desafío Galáctico", "Visita 4 planetas, gana medallas y un diploma. Superados: $done de 4") { g.retoStart() }
+            "Desafío Galáctico", "Visita los ${RETO.size} planetas, gana medallas y un diploma. Superados: $done de ${RETO.size}") { g.retoStart() }
         ModeButton({ PlanetBall(Color(0xFF8FDCFF), Color(0xFF2478C8), false, 56.dp) },
             "Astroaventura", "Visita libre: elige el planeta que quieras") { g.picker() }
         ModeButton({ PlanetBall(Color(0xFF6B57D6), Color(0xFF2A1F78), false, 56.dp) },
-            "Ataque de las palabras", "Borrón quiere ensuciar el texto. ¡Detenlo en 60 segundos! Récord: ${g.save.attack} puntos") { g.attack() }
+            "Ataque de las palabras", "Borrón quiere ensuciar el texto. ¡Detenlo en ${attackSeconds(g.level)} segundos! Récord: ${g.save.attack} puntos") { g.attack() }
+        Buttons { Ghost("Voz de Marty", icon = { SpeakerIcon() }) { g.voiceSettings() } }
+    }
+}
+
+/** Tres botones para elegir la dificultad, con estrellas (1, 2 o 3). */
+@Composable
+fun LevelPicker(g: Game) {
+    val shape = RoundedCornerShape(22.dp)
+    Column(
+        Modifier.fillMaxWidth().clip(shape).background(C.card).border(2.dp, C.line, shape).padding(12.dp),
+        verticalArrangement = Arrangement.spacedBy(8.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Text("Dificultad", style = display(19))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            Level.entries.forEachIndexed { i, l ->
+                val on = g.level == l
+                val col = listOf(C.leaf, C.sun, C.berry)[i]
+                val s = RoundedCornerShape(16.dp)
+                Column(
+                    Modifier.weight(1f).clip(s).background(if (on) col else C.space2)
+                        .border(3.dp, if (on) Color.White else C.line, s).tap { g.changeLevel(l) }
+                        .padding(vertical = 8.dp),
+                    horizontalAlignment = Alignment.CenterHorizontally,
+                ) {
+                    Row {
+                        repeat(i + 1) {
+                            Canvas(Modifier.size(16.dp)) { group(s = size.width / 24f) { path(STAR, if (on) C.onColor else C.sun) } }
+                        }
+                    }
+                    Text(l.label, style = display(18, if (on) C.onColor else C.ink))
+                }
+            }
+        }
+        Text(g.level.desc, style = body(14, C.muted), textAlign = TextAlign.Center)
     }
 }
 
 @Composable
 fun PickerScreen(g: Game) {
+    LevelPicker(g)
     GameCard {
         PLANETS.chunked(2).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
@@ -175,12 +213,14 @@ fun DiplomaScreen(g: Game) {
             Text("Se otorga a", style = body(15, ink))
             Text(g.save.name, style = display(36, ink), textAlign = TextAlign.Center)
             Box(Modifier.width(200.dp).height(3.dp).background(C.gold))
-            Text("por superar los cuatro planetas del desafío", style = body(15, ink), textAlign = TextAlign.Center)
-            Row(horizontalArrangement = Arrangement.spacedBy(18.dp)) {
-                RETO.forEach { k ->
-                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
-                        Text(planet(k).name, style = body(13, ink, FontWeight.ExtraBold))
-                        StarsRow(g.runStars(k), 14.dp)
+            Text("por superar los ${RETO.size} planetas del desafío en modo ${g.level.label.lowercase()}", style = body(15, ink), textAlign = TextAlign.Center)
+            RETO.chunked(3).forEach { row ->
+                Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.SpaceEvenly) {
+                    row.forEach { k ->
+                        Column(Modifier.weight(1f), horizontalAlignment = Alignment.CenterHorizontally) {
+                            Text(planet(k).name, style = body(13, ink, FontWeight.ExtraBold), textAlign = TextAlign.Center)
+                            StarsRow(g.runStars(k), 14.dp)
+                        }
                     }
                 }
             }
@@ -222,6 +262,68 @@ fun QFrame(
             if (clue == false) Ghost("Ver pista") { onClue() }
             if (hear) Ghost("Escuchar", icon = { SpeakerIcon() }) { g.speak(s.word.text) }
             Ghost("Salir") { g.leavePlay() }
+        }
+    }
+}
+
+/** Elegir y probar la voz del dictado, la velocidad, e instalar voces de mejor calidad. */
+@Composable
+fun VoiceScreen(g: Game) {
+    val sp = g.speech
+    val ctx = androidx.compose.ui.platform.LocalContext.current
+    var rate by remember { mutableStateOf(g.save.rate) }
+    fun open(action: String) {
+        try {
+            ctx.startActivity(android.content.Intent(action).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
+        } catch (_: Exception) {
+            g.say("No pude abrir los ajustes de voz de este teléfono. Búscalos en Ajustes → Accesibilidad → Texto a voz.")
+        }
+    }
+    GameCard {
+        Text("Velocidad", style = display(19))
+        Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            listOf("Lenta" to .75f, "Normal" to .9f, "Rápida" to 1.05f).forEach { (label, v) ->
+                val on = kotlin.math.abs(rate - v) < .01f
+                val s = RoundedCornerShape(16.dp)
+                Box(
+                    Modifier.weight(1f).clip(s).background(if (on) C.sun else C.space2).border(3.dp, if (on) Color.White else C.line, s)
+                        .tap {
+                            rate = v
+                            g.save.rate = v
+                            g.speak("Hola, soy Marty. Árbol, pingüino.")
+                        }.padding(vertical = 10.dp),
+                    contentAlignment = Alignment.Center,
+                ) { Text(label, style = display(17, if (on) C.onColor else C.ink)) }
+            }
+        }
+        Text("Voces en español de este teléfono", style = display(19), textAlign = TextAlign.Center)
+        if (sp.options.isEmpty()) {
+            Hint(if (sp.ready) "Este teléfono no muestra la lista de voces; se usa la voz en español predeterminada." else "No se encontró ninguna voz en español. Instala una con el botón de abajo.")
+        }
+        sp.options.forEach { v ->
+            val on = v.id == sp.current
+            val s = RoundedCornerShape(18.dp)
+            Row(
+                Modifier.fillMaxWidth().clip(s).background(if (on) C.space2 else C.card).border(if (on) 3.dp else 2.dp, if (on) C.leaf else C.line, s)
+                    .tap { sp.choose(v.id); g.speak("Hola, soy Marty. Árbol, pingüino, murciélago.") }.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Box(Modifier.size(22.dp).clip(RoundedCornerShape(50)).border(3.dp, if (on) C.leaf else C.muted, RoundedCornerShape(50)), contentAlignment = Alignment.Center) {
+                    if (on) Box(Modifier.size(10.dp).clip(RoundedCornerShape(50)).background(C.leaf))
+                }
+                Column(Modifier.weight(1f)) {
+                    Text(v.label, style = display(18))
+                    Text(v.detail, style = body(14, C.muted))
+                }
+                Ghost("Probar", icon = { SpeakerIcon() }) { sp.choose(v.id); g.speak("Hola, soy Marty. Árbol, pingüino, murciélago.") }
+            }
+        }
+        Hint("Consejo: las voces de \"calidad alta\" suenan más naturales. Si todas suenan robóticas, instala las voces de Google (Speech Services by Google) y descarga la voz en español.")
+        Buttons {
+            Ghost("Instalar voces") { open(android.speech.tts.TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA) }
+            Ghost("Ajustes de voz") { open("com.android.settings.TTS_SETTINGS") }
+            Ghost("Volver", primary = true) { g.home() }
         }
     }
 }

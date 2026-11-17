@@ -39,6 +39,8 @@ class MainActivity : ComponentActivity() {
         when (val demo = intent?.getStringExtra("demo")) {
             null, "home" -> Unit
             "attack" -> game.attack()
+            "voz" -> game.voiceSettings()
+            "picker" -> game.picker()
             else -> if (PLANETS.any { it.key == demo }) game.play(demo, Ctx(reto = false))
         }
         setContent {
@@ -58,19 +60,41 @@ class MainActivity : ComponentActivity() {
     }
 }
 
-private val STARS = listOf(
-    Triple(.08f, .12f, 1.6f), Triple(.22f, .64f, 1.2f), Triple(.41f, .28f, 1.8f), Triple(.63f, .82f, 1.2f),
-    Triple(.78f, .18f, 1.6f), Triple(.91f, .55f, 1.2f), Triple(.54f, .46f, 1.4f), Triple(.15f, .9f, 1.3f),
-    Triple(.86f, .93f, 1.5f), Triple(.33f, .05f, 1.1f),
-)
+/** Estrellas del fondo: posición (0..1), tamaño y desfase del parpadeo. */
+private val STARS: List<FloatArray> = kotlin.random.Random(7).let { r -> List(46) { floatArrayOf(r.nextFloat(), r.nextFloat(), .8f + r.nextFloat() * 1.4f, r.nextFloat() * 5f) } }
+
+/** Fondo del espacio animado: nebulosas que respiran, estrellas que parpadean y alguna estrella fugaz. */
+private fun androidx.compose.ui.graphics.drawscope.DrawScope.space(t: Float) {
+    drawRect(Brush.verticalGradient(listOf(C.space, C.space2)))
+    val w = size.width
+    val h = size.height
+    for ((x, y, c) in listOf(Triple(.15f, .2f, Color(0xFF7A3FC0)), Triple(.85f, .55f, Color(0xFF2E5BC0)), Triple(.3f, .85f, Color(0xFFC03F8A)))) {
+        val k = lerp(.9f, 1.1f, swing(t, 9f, x))
+        drawCircle(Brush.radialGradient(listOf(c.copy(alpha = .22f), Color.Transparent), Offset(w * x, h * y), w * .55f * k), w * .55f * k, Offset(w * x, h * y))
+    }
+    STARS.forEach { (x, y, r, ph) ->
+        drawCircle(Color.White.copy(alpha = lerp(.25f, .95f, swing(t + ph, 1.8f))), r * density, Offset(w * x, h * y))
+    }
+    // estrella fugaz cada 7 segundos
+    val p = (t % 7f) / .9f
+    if (p < 1f) {
+        val n = (t / 7f).toInt()
+        val sx = w * (.2f + (n * 37 % 60) / 100f)
+        val sy = h * (.05f + (n * 53 % 30) / 100f)
+        val hx = sx + w * .35f * p
+        val hy = sy + w * .18f * p
+        drawLine(
+            Brush.linearGradient(listOf(Color.Transparent, Color.White), Offset(hx - w * .12f, hy - w * .06f), Offset(hx, hy)),
+            Offset(hx - w * .12f, hy - w * .06f), Offset(hx, hy), 2.5f * density, alpha = 1f - p,
+        )
+    }
+}
 
 @Composable
 fun App(g: Game) {
+    val time = rememberTime()
     Box(
-        Modifier.fillMaxSize().drawBehind {
-            drawRect(Brush.verticalGradient(listOf(C.space, C.space2)))
-            STARS.forEach { (x, y, r) -> drawCircle(Color.White.copy(alpha = .7f), r * density, Offset(size.width * x, size.height * y)) }
-        }
+        Modifier.fillMaxSize().drawBehind { space(time.value) }
     ) {
         Column(
             Modifier.fillMaxSize().windowInsetsPadding(WindowInsets.safeDrawing).verticalScroll(rememberScrollState())
@@ -97,6 +121,7 @@ private fun Screens(g: Game) {
         Screen.Play -> PlayScreen(g)
         is Screen.End -> EndScreen(g, s)
         Screen.Diploma -> DiplomaScreen(g)
+        Screen.Voice -> VoiceScreen(g)
         Screen.Attack -> AttackScreen(g)
         is Screen.AttackEnd -> AttackEndScreen(g, s)
     }

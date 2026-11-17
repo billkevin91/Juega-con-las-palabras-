@@ -56,7 +56,7 @@ fun BurbujaGame(g: Game, s: Session) {
     val word = remember { letters(s.word.text.uppercase()) }
     val sp = remember { g.canSpeak }
     var pos by remember { mutableIntStateOf(0) }
-    var clue by remember { mutableStateOf(!sp) }
+    var clue by remember { mutableStateOf(!sp || s.level == Level.FACIL) }
     var won by remember { mutableStateOf(false) }
     val bubs = remember { mutableStateListOf<Bub>() }
     val time = rememberTime()
@@ -67,7 +67,8 @@ fun BurbujaGame(g: Game, s: Session) {
         if (s.locked || won) return
         if (bubs.count { it.state == 0 } >= 10) return
         val need = word[pos]
-        val c = if (Random.nextFloat() < .5f) need else {
+        val right = when (s.level) { Level.FACIL -> .65f; Level.NORMAL -> .5f; Level.DIFICIL -> .35f }
+        val c = if (Random.nextFloat() < right) need else {
             val base = norm(need)
             val pool = word + letters("AEIOUSRNLTCD") + if (base != need) listOf(base, base) else emptyList()
             pool.random()
@@ -106,7 +107,7 @@ fun BurbujaGame(g: Game, s: Session) {
         while (true) {
             delay(750)
             val now = time.value
-            bubs.removeAll { (it.state == 0 && now - it.born > it.dur * 1.5f) || (it.state != 0 && now - it.at > .7f) }
+            bubs.removeAll { (it.state == 0 && now - it.born > it.dur * 2f) || (it.state != 0 && now - it.at > .7f) }
             spawn(0f)
         }
     }
@@ -117,7 +118,7 @@ fun BurbujaGame(g: Game, s: Session) {
             val px = W / 640f
             val vh = if (tall) TALL_OCEAN else 480f
             // En teléfono: burbujas más grandes, en 5 carriles, que tardan algo más en subir.
-            val slow = if (tall) 1.5f else 1f
+            val slow = (if (tall) 1.5f else 1f) * when (s.level) { Level.FACIL -> 1.3f; Level.NORMAL -> 1f; Level.DIFICIL -> .8f }
             Canvas(Modifier.fillMaxSize()) {
                 val t = time.value
                 viewBox(640f, vh) { ocean(t, won, vh) }

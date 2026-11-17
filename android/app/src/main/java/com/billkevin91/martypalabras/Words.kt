@@ -48,14 +48,32 @@ val PLANETS: List<PlanetDef> = listOf(
 
 fun planet(key: String): PlanetDef = PLANETS.first { it.key == key }
 
-val RETO = listOf("pantano", "burbuja", "tela", "anagrama")
+/** El Desafío Galáctico recorre los seis planetas, de leer (lo más fácil) a escribir al dictado (lo más difícil). */
+val RETO = listOf("lee", "falta", "anagrama", "burbuja", "pantano", "tela")
 
 val INTRO = mapOf(
     "pantano" to "Aquí viven las ranas. Cuidado: hay tildes, eñes y diéresis escondidas.",
     "burbuja" to "Escucha la palabra y atrapa las burbujas con sus letras, en orden.",
     "tela" to "Las arañas tejen palabras. Escribe lo que escuches.",
-    "anagrama" to "Las letras salieron volando. ¡Ponlas en orden!",
+    "anagrama" to "Los conejitos traen las letras revueltas. ¡Ponlas en orden!",
+    "falta" to "Al tren de las letras le falta un vagón. ¡Encuentra la letra perdida!",
+    "lee" to "Aquí vuelan los barriletes. Lee y elige la palabra del dibujo.",
 )
+
+/* ---------- Dificultad ---------- */
+
+enum class Level(val label: String, val desc: String) {
+    FACIL("Fácil", "Palabras cortas y más ayuda"),
+    NORMAL("Normal", "Palabras de todo tipo"),
+    DIFICIL("Difícil", "Palabras largas, con tildes y menos ayuda"),
+}
+
+/** Qué tan difícil es escribir una palabra: largo, tildes, ñ, ü y letras que se confunden. */
+fun hardness(w: String): Int {
+    var s = w.length + 2 * w.count { it in "áéíóúüñ" }
+    for (p in listOf("h", "ll", "rr", "qu", "gu", "y", "z", "x", "k", "w", "v", "ce", "ci", "ge", "gi", "j")) if (w.contains(p)) s++
+    return s
+}
 
 /** Preguntas por planeta. */
 const val N = 5
@@ -67,7 +85,20 @@ fun norm(s: String): String = Normalizer.normalize(s, Normalizer.Form.NFD).repla
 
 fun letters(s: String): List<String> = s.map { it.toString() }
 
-fun poolFor(k: String): List<Word> = WORDS.filter {
+/** Palabras de un planeta para la dificultad elegida (si quedaran pocas, se usan las más cercanas). */
+fun poolFor(k: String, level: Level): List<Word> {
+    val base = planetPool(k)
+    val pick = when (level) {
+        Level.FACIL -> base.filter { hardness(it.text) <= 6 }
+        Level.NORMAL -> base.filter { hardness(it.text) in 5..9 }
+        Level.DIFICIL -> base.filter { hardness(it.text) >= 8 }
+    }
+    if (pick.size >= N * 2) return pick
+    val sorted = base.sortedBy { hardness(it.text) }
+    return if (level == Level.DIFICIL) sorted.takeLast(N * 3) else sorted.take(N * 3)
+}
+
+private fun planetPool(k: String): List<Word> = WORDS.filter {
     val l = it.text.length
     when (k) {
         "pantano" -> l >= 4

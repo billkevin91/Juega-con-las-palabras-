@@ -17,7 +17,7 @@ enum class Mood { NONE, HAPPY, SAD }
 data class Ctx(val reto: Boolean, val pi: Int = 0)
 
 /** Una visita a un planeta: 5 preguntas. */
-class Session(val k: String, val ctx: Ctx, val q: List<Word>) {
+class Session(val k: String, val ctx: Ctx, val q: List<Word>, val level: Level) {
     var i by mutableIntStateOf(0)
     var ok = 0
     var tried = false
@@ -33,6 +33,7 @@ sealed interface Screen {
     data object Play : Screen
     data class End(val k: String, val ctx: Ctx, val ok: Int, val stars: Int, val pass: Boolean) : Screen
     data object Diploma : Screen
+    data object Voice : Screen
     data object Attack : Screen
     data class AttackEnd(val score: Int, val ok: Int, val record: Boolean) : Screen
 }
@@ -47,6 +48,18 @@ class Save(context: Context) {
         get() = p.getInt("attack", 0)
         set(v) = p.edit().putInt("attack", v).apply()
 
+    var level: Level
+        get() = Level.entries.getOrElse(p.getInt("level", 1)) { Level.NORMAL }
+        set(v) = p.edit().putInt("level", v.ordinal).apply()
+
+    /** Voz elegida (vacío = la mejor que encuentre la app) y velocidad del dictado. */
+    var voice: String
+        get() = p.getString("voice", "") ?: ""
+        set(v) = p.edit().putString("voice", v).apply()
+    var rate: Float
+        get() = p.getFloat("rate", 0.9f)
+        set(v) = p.edit().putFloat("rate", v).apply()
+
     fun best(k: String) = p.getInt("best_$k", 0)
     fun setBest(k: String, v: Int) = p.edit().putInt("best_$k", v).apply()
 }
@@ -54,7 +67,7 @@ class Save(context: Context) {
 class Game(context: Context) {
     val save = Save(context)
     private val sound = Sound()
-    private val speech = Speech(context)
+    val speech = Speech(context, save)
     private val scope = MainScope()
 
     var screen by mutableStateOf<Screen>(Screen.Home)
@@ -72,6 +85,23 @@ class Game(context: Context) {
     var session by mutableStateOf<Session?>(null)
         private set
     private val run = mutableMapOf<String, Int>()
+
+    /** Dificultad elegida; se guarda en el teléfono. */
+    var level by mutableStateOf(save.level)
+        private set
+
+    fun changeLevel(l: Level) {
+        level = l
+        save.level = l
+        tone(660)
+        say(
+            when (l) {
+                Level.FACIL -> "¡Modo fácil! Palabras cortas y te ayudo más."
+                Level.NORMAL -> "¡Modo normal! Palabras de todo tipo."
+                Level.DIFICIL -> "¡Modo difícil! Palabras largas y con tildes. ¡Tú puedes!"
+            }
+        )
+    }
 
     val canSpeak: Boolean get() = speech.ready
 
@@ -144,7 +174,7 @@ class Game(context: Context) {
     fun retoIntro(pi: Int) {
         val k = RETO[pi]
         session = null
-        title = "Planeta ${pi + 1} de 4"
+        title = "Planeta ${pi + 1} de ${RETO.size}"
         react(Mood.NONE)
         say("Llegamos a ${planet(k).name}. ${INTRO[k]}")
         screen = Screen.Intro(pi)
@@ -154,16 +184,24 @@ class Game(context: Context) {
         title = "¡Diploma galáctico!"
         react(Mood.HAPPY)
         tone(523, 659, 784, 1046)
-        say("¡Lo lograste, ${save.name}! Superaste los cuatro planetas.")
+        say("¡Lo lograste, ${save.name}! Superaste los ${RETO.size} planetas.")
         screen = Screen.Diploma
     }
 
     fun runStars(k: String) = run[k] ?: save.best(k)
 
+    fun voiceSettings() {
+        session = null
+        title = "Voz de Marty"
+        react(Mood.NONE)
+        say("Elige la voz que mejor se entienda. Toca \"Probar\" para escucharla.")
+        screen = Screen.Voice
+    }
+
     /* ---------- Un planeta ---------- */
 
     fun play(k: String, ctx: Ctx) {
-        session = Session(k, ctx, poolFor(k).shuffled().take(N))
+        session = Session(k, ctx, poolFor(k, level).shuffled().take(N), level)
         startQuestion()
         screen = Screen.Play
     }

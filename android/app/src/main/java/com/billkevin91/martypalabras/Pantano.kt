@@ -79,7 +79,8 @@ fun PantanoGame(g: Game, s: Session) {
     val word = remember { letters(s.word.text.uppercase()) }
     val got = remember { mutableStateMapOf<String, Boolean>() }
     val used = remember { mutableStateMapOf<String, Int>() }
-    var lives by remember { mutableIntStateOf(6) }
+    val maxLives = when (s.level) { Level.FACIL -> 8; Level.NORMAL -> 6; Level.DIFICIL -> 4 }
+    var lives by remember { mutableIntStateOf(maxLives) }
     var lost by remember { mutableStateOf(false) }
     var won by remember { mutableStateOf(false) }
     var last by remember { mutableStateOf("") }
@@ -149,7 +150,7 @@ fun PantanoGame(g: Game, s: Session) {
             }
             // Vidas
             Row(Modifier.offset(u * 2, u * 2), horizontalArrangement = Arrangement.spacedBy(u * .6f)) {
-                repeat(6) { i ->
+                repeat(maxLives) { i ->
                     Canvas(Modifier.size(u * 5.2f, u * 2.6f)) {
                         ellipse(size.width / 2, size.height * .6f, size.width * .42f, size.height * .35f, if (i < lives) Color(0xFF8FF04F) else Color(0xFF2F4A3C), alpha = if (i < lives) 1f else .6f)
                     }
