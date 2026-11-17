@@ -31,6 +31,8 @@ jobs:
   prueba:
     needs: apk
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -51,6 +53,7 @@ jobs:
           api-level: 30
           arch: x86_64
           target: google_apis
+          profile: pixel_5
           disable-animations: false
           script: bash .github/scripts/smoke.sh
 
@@ -59,3 +62,16 @@ jobs:
         with:
           name: capturas
           path: shots/
+
+      # Deja las capturas en la rama "capturas-ci" para poder revisarlas sin descargar el artefacto.
+      - name: Publicar capturas en la rama capturas-ci
+        if: always()
+        run: |
+          cd shots
+          rm -f logcat.txt
+          git init -q -b capturas-ci
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Capturas de ${GITHUB_SHA}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" capturas-ci
