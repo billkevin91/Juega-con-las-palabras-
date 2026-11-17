@@ -86,6 +86,20 @@ fun DrawScope.rect(
     if (stroke.isSpecified) drawRoundRect(stroke, tl, s, cr, alpha = alpha, style = outline(sw))
 }
 
+private val scratch = Path()
+
+/**
+ * Curva suave de tres puntos (como "M Q T" en SVG) sin pasar por texto: para formas que cambian
+ * en cada fotograma, como tentáculos, y que no conviene guardar en la caché de trazos.
+ */
+fun DrawScope.wiggle(x0: Float, y0: Float, cx: Float, cy: Float, x1: Float, y1: Float, x2: Float, y2: Float, color: Color, sw: Float) {
+    scratch.reset()
+    scratch.moveTo(x0, y0)
+    scratch.quadraticBezierTo(cx, cy, x1, y1)
+    scratch.quadraticBezierTo(2 * x1 - cx, 2 * y1 - cy, x2, y2)
+    drawPath(scratch, color, style = outline(sw))
+}
+
 fun DrawScope.line(x1: Float, y1: Float, x2: Float, y2: Float, color: Color, sw: Float = 2f, alpha: Float = 1f) =
     drawLine(color, Offset(x1, y1), Offset(x2, y2), sw, StrokeCap.Round, alpha = alpha)
 

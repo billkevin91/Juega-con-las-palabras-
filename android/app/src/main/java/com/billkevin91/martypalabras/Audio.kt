@@ -5,6 +5,9 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import android.speech.tts.TextToSpeech
+import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableStateOf
+import androidx.compose.runtime.setValue
 import java.util.Locale
 import java.util.concurrent.Executors
 import kotlin.math.PI
@@ -60,7 +63,8 @@ class Sound {
 
 /** Voz del teléfono para dictar las palabras. */
 class Speech(context: Context) {
-    var ready = false
+    /** Estado observable: la interfaz se actualiza sola cuando la voz termina de cargar. */
+    var ready by mutableStateOf(false)
         private set
     private val tts: TextToSpeech = TextToSpeech(context.applicationContext) { status ->
         if (status == TextToSpeech.SUCCESS) setup()

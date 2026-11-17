@@ -237,7 +237,7 @@ private fun DrawScope.osquid(x: Float, y: Float, s: Float, t: Float) = group(x, 
         for (i in 0 until 6) {
             val dx = -20f + i * 8
             val sk = lerp(-8f, 8f, swing(t, 2f, i * .1f))
-            path("M$dx 14Q${dx - 8 + sk * .5f} 34 ${dx + sk * .7f} 48T${dx + sk} 78", stroke = Color(0xFF8F5BE8), sw = 5f)
+            wiggle(dx, 14f, dx - 8 + sk * .5f, 34f, dx + sk * .7f, 48f, dx + sk, 78f, Color(0xFF8F5BE8), 5f)
         }
         path("M-24 14Q-26 -34 0 -44Q26 -34 24 14Q0 22 -24 14Z", Color(0xFFB07CFF))
         path("M-22 -22L-40 -8L-24 -2ZM22 -22L40 -8L24 -2Z", Color(0xFF7A4FD8))
@@ -248,14 +248,27 @@ private fun DrawScope.osquid(x: Float, y: Float, s: Float, t: Float) = group(x, 
     }
 }
 
+private val PUFFER_SPIKES: String = buildString {
+    for (i in 0 until 12) {
+        val a = i * 30 * PI.toFloat() / 180
+        val x1 = cos(a) * 24; val y1 = sin(a) * 24; val x2 = cos(a) * 36; val y2 = sin(a) * 36
+        val px = -sin(a) * 5; val py = cos(a) * 5
+        append("M${x1 + px} ${y1 + py}L$x2 ${y2}L${x1 - px} ${y1 - py}Z")
+    }
+}
+
+private val STAR_SHAPE: String = buildString {
+    for (i in 0 until 10) {
+        val r = if (i % 2 == 1) 7f else 16f
+        val a = (i * 36 - 90) * PI.toFloat() / 180
+        append(if (i == 0) "M" else "L").append(cos(a) * r).append(' ').append(sin(a) * r)
+    }
+    append("Z")
+}
+
 private fun DrawScope.opuffer(x: Float, y: Float, s: Float, t: Float) = group(x, y, s) {
     group(y = lerp(-8f, 8f, swing(t, 3f, .3f))) {
-        for (i in 0 until 12) {
-            val a = i * 30 * PI.toFloat() / 180
-            val x1 = cos(a) * 24; val y1 = sin(a) * 24; val x2 = cos(a) * 36; val y2 = sin(a) * 36
-            val px = -sin(a) * 5; val py = cos(a) * 5
-            path("M${x1 + px} ${y1 + py}L$x2 ${y2}L${x1 - px} ${y1 - py}Z", Color(0xFF2F9A4A))
-        }
+        path(PUFFER_SPIKES, Color(0xFF2F9A4A))
         spin(lerp(-14f, 14f, swing(t, .5f)), -24f, 0f) { path("M-24 0L-46 -12L-46 12Z", Color(0xFF2F9A4A)) }
         circle(0f, 0f, 26f, Color(0xFF7EE06A)); ellipse(2f, 10f, 18f, 10f, Color(0xFFE6FFB8))
         circle(-8f, -8f, 3.5f, Color.White); circle(4f, -14f, 3f, Color.White)
@@ -272,7 +285,7 @@ private fun DrawScope.ojelly(x: Float, y: Float, s: Float, b: Color, tc: Color, 
         for (i in 0 until 5) {
             val dx = -20f + i * 10
             val sk = lerp(-8f, 8f, swing(t, 2f, i * .12f))
-            path("M$dx 4Q${dx + 8 + sk * .4f} 22 ${dx + sk * .6f} 36T${dx + sk} 66", stroke = tc, sw = 4f)
+            wiggle(dx, 4f, dx + 8 + sk * .4f, 22f, dx + sk * .6f, 36f, dx + sk, 66f, tc, 4f)
         }
         val bp = swing(t, 1.2f)
         zoom(lerp(1f, 1.07f, bp), lerp(1f, .88f, bp), 0f, -44f) {
@@ -308,13 +321,7 @@ private fun DrawScope.oanem(x: Float, y: Float, s: Float, c: Color, l: Color, t:
 }
 
 private fun DrawScope.ostar(x: Float, y: Float, s: Float, c: Color) = group(x, y, s) {
-    val sb = StringBuilder()
-    for (i in 0 until 10) {
-        val r = if (i % 2 == 1) 7f else 16f
-        val a = (i * 36 - 90) * PI.toFloat() / 180
-        sb.append(if (i == 0) "M" else "L").append(cos(a) * r).append(' ').append(sin(a) * r)
-    }
-    path(sb.append("Z").toString(), c, Color.White.copy(alpha = .4f), 1f)
+    path(STAR_SHAPE, c, Color.White.copy(alpha = .4f), 1f)
 }
 
 private fun DrawScope.oshell(x: Float, y: Float, s: Float) = group(x, y, s) {

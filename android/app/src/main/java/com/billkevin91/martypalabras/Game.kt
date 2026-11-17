@@ -6,6 +6,7 @@ import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.setValue
 import kotlinx.coroutines.MainScope
+import kotlinx.coroutines.cancel
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
@@ -87,7 +88,13 @@ class Game(context: Context) {
     fun tone(vararg f: Int) = sound.tone(*f)
     fun speak(s: String) = speech.speak(s)
 
-    fun close() = speech.shutdown()
+    fun close() {
+        scope.cancel()
+        speech.shutdown()
+    }
+
+    /** La app pasa a segundo plano: que no siga hablando. */
+    fun pause() = speech.stop()
 
     /* ---------- Menús ---------- */
 

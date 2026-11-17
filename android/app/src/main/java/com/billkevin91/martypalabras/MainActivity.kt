@@ -47,6 +47,11 @@ class MainActivity : ComponentActivity() {
         }
     }
 
+    override fun onStop() {
+        game.pause()
+        super.onStop()
+    }
+
     override fun onDestroy() {
         game.close()
         super.onDestroy()
