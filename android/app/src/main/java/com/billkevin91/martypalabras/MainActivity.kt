@@ -41,6 +41,7 @@ class MainActivity : ComponentActivity() {
             "attack" -> game.attack()
             "voz" -> game.voiceSettings()
             "picker" -> game.picker()
+            "intro" -> game.retoIntro(4)
             else -> if (PLANETS.any { it.key == demo }) game.play(demo, Ctx(reto = false))
         }
         setContent {
