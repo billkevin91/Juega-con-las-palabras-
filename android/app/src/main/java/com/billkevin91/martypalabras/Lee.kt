@@ -74,6 +74,7 @@ fun LeeGame(g: Game, s: Session) {
         if (opts[i] == s.word.text) {
             winner = i
             winAt = time.value
+            g.sfx(Sfx.WHOOSH)
             g.win(!s.tried)
         } else {
             shakes[i] = time.value

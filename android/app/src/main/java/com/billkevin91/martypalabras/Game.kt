@@ -67,6 +67,7 @@ class Save(context: Context) {
 class Game(context: Context) {
     val save = Save(context)
     private val sound = Sound()
+    private val haptics = Haptics(context)
     val speech = Speech(context, save)
     private val scope = MainScope()
 
@@ -85,6 +86,17 @@ class Game(context: Context) {
     var session by mutableStateOf<Session?>(null)
         private set
     private val run = mutableMapOf<String, Int>()
+
+    /** Cada vez que sube, se lanza confeti; [partyBig] para las celebraciones grandes. */
+    var party by mutableIntStateOf(0)
+        private set
+    var partyBig by mutableStateOf(false)
+        private set
+
+    fun celebrate(big: Boolean) {
+        partyBig = big
+        party++
+    }
 
     /** Dificultad elegida; se guarda en el teléfono. */
     var level by mutableStateOf(save.level)
@@ -116,6 +128,7 @@ class Game(context: Context) {
     }
 
     fun tone(vararg f: Int) = sound.tone(*f)
+    fun sfx(s: Sfx) = sound.sfx(s)
     fun speak(s: String) = speech.speak(s)
 
     fun close() {
@@ -185,6 +198,7 @@ class Game(context: Context) {
         react(Mood.HAPPY)
         tone(523, 659, 784, 1046)
         say("¡Lo lograste, ${save.name}! Superaste los ${RETO.size} planetas.")
+        celebrate(true)
         screen = Screen.Diploma
     }
 
@@ -222,6 +236,7 @@ class Game(context: Context) {
         val s = session ?: return
         s.tried = true
         tone(200, 150)
+        haptics.wrong()
         react(Mood.SAD)
         say("¡Casi! Prueba otra vez.")
     }
@@ -233,8 +248,10 @@ class Game(context: Context) {
         if (credit) s.ok++
         react(Mood.HAPPY)
         tone(523, 659, 784)
+        haptics.right()
         if (!quiet) speak(s.word.text)
-        say(listOf("¡Muy bien!", "¡Excelente!", "¡Lo lograste!", "¡Qué listo eres!", "¡Genial!").random() + " " + s.word.text)
+        say(listOf("¡Muy bien!", "¡Excelente!", "¡Lo lograste!", "¡Qué listo eres!", "¡Genial!", "¡Fantástico!", "¡Eres una estrella!").random() + " " + s.word.text)
+        celebrate(false)
         later(s, 1500)
     }
 
@@ -266,7 +283,10 @@ class Game(context: Context) {
         }
         if (reto && pass) run[k] = st
         react(if (pass) Mood.HAPPY else Mood.SAD)
-        if (pass) tone(523, 659, 784, 1046) else tone(300, 260)
+        if (pass) {
+            tone(523, 659, 784, 1046)
+            celebrate(true)
+        } else tone(300, 260)
         val name = planet(k).name
         say(
             if (reto) {
@@ -306,7 +326,10 @@ class Game(context: Context) {
         val rec = score > save.attack
         if (rec) save.attack = score
         react(if (ok >= 7) Mood.SAD else Mood.HAPPY)
-        if (ok >= 7) tone(523, 659, 784) else tone(300, 260)
+        if (ok >= 7) {
+            tone(523, 659, 784)
+            celebrate(true)
+        } else tone(300, 260)
         say(if (ok >= 7) "¡Me ganaste! Escribes muy bien." else "¡Jajaja! Esta vez gané yo. ¿Revancha?", Who.BORRON)
         screen = Screen.AttackEnd(score, ok, rec)
     }

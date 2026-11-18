@@ -85,6 +85,7 @@ fun BurbujaGame(g: Game, s: Session) {
         if (b.c == need) {
             b.state = 1
             pos++
+            g.sfx(Sfx.POP)
             g.tone(520 + pos * 40)
             if (pos >= word.size) {
                 won = true

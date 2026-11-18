@@ -108,6 +108,7 @@ fun App(g: Game) {
                 Screens(g)
             }
         }
+        Confetti(g.party, g.partyBig)
     }
 }
 

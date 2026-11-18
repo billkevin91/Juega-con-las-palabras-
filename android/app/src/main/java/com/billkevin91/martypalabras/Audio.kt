@@ -1,6 +1,10 @@
 package com.billkevin91.martypalabras
 
 import android.content.Context
+import android.os.Build
+import android.os.VibrationEffect
+import android.os.Vibrator
+import android.os.VibratorManager
 import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
@@ -17,29 +21,71 @@ import kotlin.math.asin
 import kotlin.math.exp
 import kotlin.math.sin
 
-/** Pitidos del juego: notas de onda triangular que se apagan solas. */
+/** Efectos de sonido sintetizados (no hacen falta archivos de audio). */
+enum class Sfx { POP, BOING, WHOOSH, CLICK }
+
+/** Pitidos y efectos del juego, generados al momento con ondas simples. */
 class Sound {
     private val worker = Executors.newCachedThreadPool()
     private val rate = 22050
 
-    fun tone(vararg freqs: Int) {
+    /** Notas de onda triangular que se apagan solas (una tras otra). */
+    fun tone(vararg freqs: Int) = render(((freqs.size - 1) * 0.12 + 0.26)) { pcm ->
+        freqs.forEachIndexed { i, f ->
+            val start = (i * 0.12 * rate).toInt()
+            for (j in 0 until (0.26 * rate).toInt()) {
+                val t = j.toDouble() / rate
+                mix(pcm, start + j, 2 / PI * asin(sin(2 * PI * f * t)) * 0.15 * exp(-t * 18))
+            }
+        }
+    }
+
+    fun sfx(s: Sfx) = when (s) {
+        // burbuja que revienta: tono que cae muy rápido
+        Sfx.POP -> render(0.12) { pcm ->
+            var ph = 0.0
+            for (j in pcm.indices) {
+                val t = j.toDouble() / rate
+                ph += 2 * PI * (300 + 1100 * exp(-t * 45)) / rate
+                mix(pcm, j, sin(ph) * 0.3 * exp(-t * 38))
+            }
+        }
+        // salto con resorte: tono que sube y vibra
+        Sfx.BOING -> render(0.38) { pcm ->
+            var ph = 0.0
+            for (j in pcm.indices) {
+                val t = j.toDouble() / rate
+                ph += 2 * PI * (220 + 520 * (1 - exp(-t * 9)) + 30 * sin(t * 2 * PI * 18)) / rate
+                mix(pcm, j, sin(ph) * 0.22 * exp(-t * 6))
+            }
+        }
+        // viento (barrilete que vuela): ruido suave que sube y baja
+        Sfx.WHOOSH -> render(0.5) { pcm ->
+            val rnd = java.util.Random(7)
+            var lp = 0.0
+            for (j in pcm.indices) {
+                val p = j.toDouble() / pcm.size
+                lp += (rnd.nextGaussian() - lp) * (0.05 + 0.25 * p)
+                mix(pcm, j, lp * 0.5 * sin(PI * p))
+            }
+        }
+        // tecla: clic corto
+        Sfx.CLICK -> render(0.03) { pcm ->
+            val rnd = java.util.Random(3)
+            for (j in pcm.indices) mix(pcm, j, (rnd.nextDouble() * 2 - 1) * 0.18 * exp(-j.toDouble() / rate * 220))
+        }
+    }
+
+    private fun mix(pcm: ShortArray, k: Int, v: Double) {
+        if (k in pcm.indices) pcm[k] = (pcm[k] + v * 32767).toInt().coerceIn(-32768, 32767).toShort()
+    }
+
+    /** Genera [seconds] de audio con [build] y lo reproduce en segundo plano. */
+    private fun render(seconds: Double, build: (ShortArray) -> Unit) {
         worker.execute {
             try {
-                val step = 0.12
-                val len = 0.26
-                val total = ((freqs.size - 1) * step + len) * rate
-                val pcm = ShortArray(total.toInt() + 1)
-                freqs.forEachIndexed { i, f ->
-                    val start = (i * step * rate).toInt()
-                    val n = (len * rate).toInt()
-                    for (j in 0 until n) {
-                        val t = j.toDouble() / rate
-                        val tri = 2 / PI * asin(sin(2 * PI * f * t))
-                        val g = 0.15 * exp(-t * 18)
-                        val k = start + j
-                        if (k < pcm.size) pcm[k] = (pcm[k] + tri * g * 32767).toInt().coerceIn(-32768, 32767).toShort()
-                    }
-                }
+                val pcm = ShortArray((seconds * rate).toInt() + 1)
+                build(pcm)
                 val track = AudioTrack.Builder()
                     .setAudioAttributes(
                         AudioAttributes.Builder()
@@ -61,6 +107,32 @@ class Sound {
             }
         }
     }
+}
+
+/** Vibración corta para acompañar aciertos y errores. */
+class Haptics(context: Context) {
+    private val v: Vibrator? = try {
+        if (Build.VERSION.SDK_INT >= 31) (context.getSystemService(Context.VIBRATOR_MANAGER_SERVICE) as VibratorManager).defaultVibrator
+        else context.getSystemService(Context.VIBRATOR_SERVICE) as Vibrator
+    } catch (_: Exception) {
+        null
+    }
+
+    private fun play(timings: LongArray, amps: IntArray) {
+        val vib = v ?: return
+        try {
+            if (!vib.hasVibrator()) return
+            if (Build.VERSION.SDK_INT >= 26) vib.vibrate(VibrationEffect.createWaveform(timings, amps, -1))
+            else vib.vibrate(timings, -1)
+        } catch (_: Exception) {
+        }
+    }
+
+    /** Error: un zumbido corto. */
+    fun wrong() = play(longArrayOf(0, 70), intArrayOf(0, 140))
+
+    /** Acierto: dos toquecitos suaves. */
+    fun right() = play(longArrayOf(0, 25, 60, 25), intArrayOf(0, 90, 0, 90))
 }
 
 /** Una voz en español disponible en el teléfono, con un nombre amable para mostrar. */

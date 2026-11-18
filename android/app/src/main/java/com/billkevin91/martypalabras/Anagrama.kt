@@ -233,7 +233,7 @@ fun AnagramaGame(g: Game, s: Session) {
         val slot = pos
         help = false
         pos++
-        g.tone(520 + pos * 40)
+        g.sfx(Sfx.BOING)
         hops[i] = time.value to slot
         val last = pos == n
         if (last) g.win(!s.tried) else g.say("¡Salta, conejito! Busca la siguiente letra.")

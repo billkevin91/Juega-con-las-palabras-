@@ -172,9 +172,15 @@ fun NameScreen(g: Game) {
 @Composable
 fun IntroScreen(g: Game, pi: Int) {
     val p = planet(RETO[pi])
+    val t by rememberTime()
+    val tm = rememberTextMeasurer()
     GameCard {
-        PlanetBall(p, 110.dp)
-        Text("${p.name}\n${p.desc}", style = body(16, C.muted, FontWeight.ExtraBold), textAlign = TextAlign.Center)
+        Box(Modifier.scene(16f / 9f, Ink, 22.dp, 3.dp)) {
+            Canvas(Modifier.fillMaxSize()) { landing(t, p, tm) }
+            Sparkles(Color(0xFFFFF3B0), 10)
+        }
+        Text(p.name, style = display(28, C.sun))
+        Text(p.desc, style = body(16, C.muted, FontWeight.ExtraBold), textAlign = TextAlign.Center)
         Buttons {
             Ghost("Aterrizar", primary = true) { g.play(p.key, Ctx(reto = true, pi = pi)) }
             Ghost("Salir") { g.home() }
@@ -186,7 +192,7 @@ fun IntroScreen(g: Game, pi: Int) {
 fun EndScreen(g: Game, e: Screen.End) {
     GameCard {
         PlanetBall(planet(e.k), 90.dp)
-        StarsRow(e.stars, 60.dp)
+        AnimatedStars(e.stars, 64.dp) { i -> g.tone(660 + i * 220) }
         Text("${e.ok} de $N a la primera", style = body(16, C.muted, FontWeight.ExtraBold))
         Buttons {
             val label = when {
@@ -241,7 +247,7 @@ fun DiplomaScreen(g: Game) {
 @Composable
 fun AttackEndScreen(g: Game, e: Screen.AttackEnd) {
     GameCard {
-        StarsRow(if (e.ok >= 12) 3 else if (e.ok >= 7) 2 else 1, 60.dp)
+        AnimatedStars(if (e.ok >= 12) 3 else if (e.ok >= 7) 2 else 1, 64.dp) { i -> g.tone(660 + i * 220) }
         Text(
             "${e.score} puntos · ${e.ok} palabras bien" + if (e.record) "\n¡Nuevo récord!" else "",
             style = body(16, C.muted, FontWeight.ExtraBold), textAlign = TextAlign.Center,

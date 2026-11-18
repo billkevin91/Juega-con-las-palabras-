@@ -112,13 +112,14 @@ fun FaltaGame(g: Game, s: Session) {
         if (opts[i] == miss) {
             hopFrom = i
             hopAt = time.value
-            g.tone(660, 880)
+            g.sfx(Sfx.BOING)
             scope.launch {
                 delay(450)
                 filled = true
                 g.win(!s.tried)
                 delay(150)
                 g.tone(880, 990, 880)
+                g.sfx(Sfx.WHOOSH)
                 departAt = time.value
             }
         } else {

@@ -98,6 +98,7 @@ fun PantanoGame(g: Game, s: Session) {
         val now = time.value
         if (word.contains(c)) {
             used[c] = 1; got[c] = true; last = c
+            g.sfx(Sfx.POP)
             g.tone(520)
             ripples += Ripple(p.x, p.y, false, now)
             fxKind = 1; fxAt = now

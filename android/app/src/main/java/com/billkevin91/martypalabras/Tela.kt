@@ -263,6 +263,7 @@ fun TelaGame(g: Game, s: Session) {
                 if (typed.length >= MAX_LETTERS) return
                 typed += c
                 born += time.value
+                g.sfx(Sfx.CLICK)
                 g.tone(660 + typed.length * 30)
             }
         }
