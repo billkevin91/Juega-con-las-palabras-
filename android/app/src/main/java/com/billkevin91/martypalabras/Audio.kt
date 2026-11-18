@@ -166,13 +166,10 @@ class Speech(context: Context, private val save: Save) {
         emptySet()
     }
 
-    /** Se llama una vez cuando la voz está lista (para leer el primer mensaje de Marty). */
-    var onReady: (() -> Unit)? = null
-
     private val tts: TextToSpeech = TextToSpeech(app) { status ->
         if (status == TextToSpeech.SUCCESS) {
             setup()
-            if (ready) onReady?.invoke()
+            if (ready) waiting?.let { waiting = null; speakLine(it) }
         }
     }
 
@@ -254,10 +251,17 @@ class Speech(context: Context, private val save: Save) {
         }
     }
 
-    /** Clave del archivo de grabación: sin tildes, en minúsculas, la ñ como "ny" (árbol → arbol, niño → ninyo). */
+    /** Frases grabadas disponibles (assets/voz/f/<crc32>.m4a). */
+    private val phraseClips: Set<String> = try {
+        app.assets.list("voz/f")?.toSet() ?: emptySet()
+    } catch (_: Exception) {
+        emptySet()
+    }
+
+    /** Archivo grabado de una palabra, si existe (assets/voz/arbol.m4a). */
     private fun recordingFor(text: String): String? {
-        val key = norm(text.lowercase().replace("ñ", "ny")).replace(Regex("[^a-z]"), "")
-        return listOf("mp3", "ogg", "m4a", "wav").map { "$key.$it" }.firstOrNull { it in recordings }
+        val key = palabraClave(text)
+        return listOf("ogg", "mp3", "m4a", "wav").map { "$key.$it" }.firstOrNull { it in recordings }?.let { "voz/$it" }
     }
 
     /** ¿Marty y Borrón leen en voz alta lo que dicen? (Se puede apagar en "Voz de Marty".) */
@@ -270,12 +274,72 @@ class Speech(context: Context, private val save: Save) {
         if (!on) stop()
     }
 
+    /* ---------- Cadena de grabaciones ---------- */
+
+    /** Archivos que faltan por sonar en la cadena actual, y la palabra que espera a que termine. */
+    private val chain = ArrayDeque<String>()
+    private var pendingWord: String? = null
+
+    private fun playChain(files: List<String>) {
+        stopPlayer()
+        chain.clear()
+        chain.addAll(files)
+        playNext()
+    }
+
+    private fun playNext() {
+        val file = chain.removeFirstOrNull()
+        if (file == null) {
+            player = null
+            pendingWord?.let { pendingWord = null; speak(it, flush = true) }
+            return
+        }
+        try {
+            val fd = app.assets.openFd(file)
+            player = MediaPlayer().apply {
+                setDataSource(fd.fileDescriptor, fd.startOffset, fd.length)
+                fd.close()
+                setOnCompletionListener { mp ->
+                    mp.release()
+                    if (player === mp) playNext()
+                }
+                prepare()
+                start()
+            }
+        } catch (_: Exception) {
+            playNext()
+        }
+    }
+
+    /** Frase que no se pudo decir porque la voz del teléfono aún no estaba lista. */
+    private var waiting: Line? = null
+
     /**
-     * Voz del presentador: Marty, agudo y alegre; Borrón, grave y travieso.
-     * Corta lo que se estuviera diciendo, para que lo último que pasa en el juego sea lo que se oye.
+     * Dice una frase de Marty o Borrón: con las grabaciones si están todas sus partes,
+     * o con la voz del teléfono (Marty agudo y alegre, Borrón grave) si falta alguna.
      */
-    fun speakHost(text: String, borron: Boolean) {
-        if (!hostOn || !ready) return
+    fun speakLine(l: Line) {
+        if (!hostOn) return
+        val files = l.parts.map { p ->
+            when (p) {
+                is Parte.Frase -> fraseArchivo(p.texto).takeIf { it in phraseClips }?.let { "voz/f/$it" }
+                is Parte.Palabra -> recordingFor(p.texto)
+            }
+        }
+        if (l.parts.isNotEmpty() && files.all { it != null }) {
+            if (ready) tts.stop()
+            pendingWord = null
+            playChain(files.filterNotNull())
+            return
+        }
+        if (!ready) {
+            waiting = l
+            return
+        }
+        speakHost(l.text, l.who == Who.BORRON)
+    }
+
+    private fun speakHost(text: String, borron: Boolean) {
         stopPlayer()
         val clean = text.replace("\"", "").replace("…", ",").trim()
         if (clean.isEmpty()) return
@@ -290,19 +354,13 @@ class Speech(context: Context, private val save: Save) {
      */
     fun speak(text: String, flush: Boolean = true) {
         if (flush) stop()
+        else if (player != null) {
+            pendingWord = text
+            return
+        }
         recordingFor(text)?.let { file ->
-            try {
-                val fd = app.assets.openFd("voz/$file")
-                player = MediaPlayer().apply {
-                    setDataSource(fd.fileDescriptor, fd.startOffset, fd.length)
-                    fd.close()
-                    setOnCompletionListener { it.release(); if (player === it) player = null }
-                    prepare()
-                    start()
-                }
-                return
-            } catch (_: Exception) {
-            }
+            playChain(listOf(file))
+            return
         }
         if (!ready) return
         tts.setSpeechRate(save.rate)
@@ -312,11 +370,13 @@ class Speech(context: Context, private val save: Save) {
     }
 
     private fun stopPlayer() {
+        chain.clear()
         player?.let { try { it.stop(); it.release() } catch (_: Exception) {} }
         player = null
     }
 
     fun stop() {
+        pendingWord = null
         stopPlayer()
         if (ready) tts.stop()
     }

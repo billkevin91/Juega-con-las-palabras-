@@ -1,0 +1,53 @@
+name: Voz de Marty
+
+# Genera las grabaciones de voz (Piper) y las deja en la rama "voz-ci".
+# Se ejecuta cuando cambian las frases o las palabras, o a mano desde la pestaña Actions.
+on:
+  workflow_dispatch:
+  push:
+    paths:
+      - android/app/src/main/java/com/billkevin91/martypalabras/Frases.kt
+      - android/app/src/main/java/com/billkevin91/martypalabras/Words.kt
+      - tools/voz/**
+
+permissions:
+  contents: write
+
+jobs:
+  voz:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 17
+
+      - uses: gradle/actions/setup-gradle@v4
+
+      - name: Lista de frases y palabras
+        working-directory: android
+        run: |
+          chmod +x gradlew
+          ./gradlew testDebugUnitTest --no-daemon --tests '*FrasesTest*'
+
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+
+      - name: Generar la voz
+        run: |
+          sudo apt-get install -y ffmpeg > /dev/null
+          pip install piper-tts
+          python tools/voz/generar.py voz-generada
+
+      - name: Publicar en la rama voz-ci
+        run: |
+          cd voz-generada
+          git init -q -b voz-ci
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add -A
+          git commit -q -m "Voz generada para ${GITHUB_SHA}"
+          git push -q -f "https://x-access-token:${{ github.token }}@github.com/${{ github.repository }}.git" voz-ci

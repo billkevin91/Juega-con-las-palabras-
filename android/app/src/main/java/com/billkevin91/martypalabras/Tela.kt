@@ -218,7 +218,7 @@ fun TelaGame(g: Game, s: Session) {
     var pressedAt by remember { mutableFloatStateOf(-9f) }
 
     LaunchedEffect(Unit) {
-        g.say(if (sp) "Escucha la palabra y escríbela en el teclado. ¡Las arañas te traerán cada letra!" else "Tu teléfono no puede hablar. Mira la pantalla y escribe la palabra en el teclado.")
+        g.say(if (sp) Frases.TELA_INICIO else Frases.TELA_SIN_VOZ)
         if (sp) {
             delay(400)
             if (!s.locked) g.speak(w, flush = false)
@@ -242,9 +242,9 @@ fun TelaGame(g: Game, s: Session) {
         fxKind = 2; fxAt = time.value
         g.say(
             when {
-                norm(v) == norm(w) -> "¡Casi! Revisa las tildes, la ñ y la ü."
-                v.length != w.length -> "Casi. La palabra tiene ${w.length} letras."
-                else -> "Todavía no. Escucha otra vez."
+                norm(v) == norm(w) -> Frases.TELA_TILDES
+                v.length != w.length -> Frases.telaLetras(w.length)
+                else -> Frases.TELA_OTRA_VEZ
             }
         )
     }
@@ -368,7 +368,7 @@ fun TelaGame(g: Game, s: Session) {
                 born.clear(); repeat(w.length) { born += -9f }
                 marks = w
                 clue = true
-                g.say("Se escribe $w. ¡Sigamos!")
+                g.say(Frases.seEscribe(w))
                 g.later(s, 2400)
             }
         }

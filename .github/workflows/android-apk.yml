@@ -7,6 +7,8 @@ on:
 jobs:
   apk:
     runs-on: ubuntu-latest
+    permissions:
+      contents: write
     steps:
       - uses: actions/checkout@v4
 
@@ -33,6 +35,22 @@ jobs:
         with:
           name: marty-y-las-palabras-apk
           path: android/app/build/outputs/apk/debug/app-debug.apk
+
+      # Enlace fijo para descargar la última APK directamente desde el teléfono.
+      - name: Preparar APK para descargar
+        run: cp android/app/build/outputs/apk/debug/app-debug.apk MartyYLasPalabras.apk
+
+      - name: Publicar en "Releases" (enlace directo)
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ultima-version
+          name: "Marty y las Palabras (última versión)"
+          body: |
+            Toca **MartyYLasPalabras.apk** para descargar e instalar el juego en tu teléfono Android.
+            (Si Android pregunta, permite instalar apps de este origen.)
+          prerelease: true
+          make_latest: true
+          files: MartyYLasPalabras.apk
 
   prueba:
     needs: apk

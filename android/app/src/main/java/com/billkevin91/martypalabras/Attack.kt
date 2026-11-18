@@ -164,7 +164,7 @@ fun AttackScreen(g: Game) {
             score += 10 + if (combo >= 3) 5 else 0
             g.tone(600, 800)
             g.react(Mood.HAPPY)
-            g.say("¡Bien! ${cur.text}")
+            g.say(Frases.ataqueBien(cur.text))
             scope.launch {
                 delay(400)
                 marks = emptyMap(); idx++; locked = false
@@ -183,7 +183,7 @@ fun AttackScreen(g: Game) {
                 jolt.animateTo(0f, tween(260))
             }
             g.react(Mood.HAPPY)
-            g.say("¡Jajaja! Se escribe ${cur.text}. ¡Una mancha más!", Who.BORRON)
+            g.say(Frases.ataqueMancha(cur.text))
             scope.launch {
                 delay(900)
                 if (lives <= 0) finish() else {

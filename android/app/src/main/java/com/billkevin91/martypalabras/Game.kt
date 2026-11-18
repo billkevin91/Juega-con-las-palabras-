@@ -103,11 +103,6 @@ class Game(context: Context) {
         party++
     }
 
-    init {
-        // El primer saludo llega antes de que cargue la voz: se lee en cuanto esté lista.
-        speech.onReady = { speech.speakHost(text, who == Who.BORRON) }
-    }
-
     /** Dificultad elegida; se guarda en el teléfono. */
     var level by mutableStateOf(save.level)
         private set
@@ -116,21 +111,16 @@ class Game(context: Context) {
         level = l
         save.level = l
         tone(660)
-        say(
-            when (l) {
-                Level.FACIL -> "¡Modo fácil! Palabras cortas y te ayudo más."
-                Level.NORMAL -> "¡Modo normal! Palabras de todo tipo."
-                Level.DIFICIL -> "¡Modo difícil! Palabras largas y con tildes. ¡Tú puedes!"
-            }
-        )
+        say(Frases.nivel(l))
     }
 
     val canSpeak: Boolean get() = speech.ready
 
-    fun say(t: String, w: Who = Who.MARTY) {
-        text = t
-        who = w
-        speech.speakHost(t, w == Who.BORRON)
+    /** Muestra la frase en el globo y la dice en voz alta (grabada, o con la voz del teléfono). */
+    fun say(l: Line) {
+        text = l.text
+        who = l.who
+        speech.speakLine(l)
     }
 
     fun react(m: Mood) {
@@ -157,10 +147,7 @@ class Game(context: Context) {
         speech.stop()
         title = "Marty y las Palabras"
         react(Mood.NONE)
-        say(
-            if (save.name.isNotEmpty()) "¡Hola, ${save.name}! ¿A qué planeta vamos hoy?"
-            else "¡Bienvenido al concurso galáctico! ¡Soy Marty, tu presentador! ¡Vamos, vamos, vamos!"
-        )
+        say(if (save.name.isNotEmpty()) Frases.hola(save.name) else Frases.BIENVENIDA)
         screen = Screen.Home
     }
 
@@ -168,7 +155,7 @@ class Game(context: Context) {
         session = null
         title = "Astroaventura"
         react(Mood.NONE)
-        say("Elige un planeta. Aquí no hay prisa: practica lo que quieras.")
+        say(Frases.ELIGE_PLANETA)
         screen = Screen.Picker
     }
 
@@ -186,7 +173,7 @@ class Game(context: Context) {
         if (save.name.isNotEmpty()) return retoIntro(0)
         title = "Antes de despegar"
         react(Mood.NONE)
-        say("¿Cómo te llamas, astronauta? Tu nombre irá en el diploma.")
+        say(Frases.NOMBRE)
         screen = Screen.Name
     }
 
@@ -200,7 +187,7 @@ class Game(context: Context) {
         session = null
         title = "Planeta ${pi + 1} de ${RETO.size}"
         react(Mood.NONE)
-        say("Llegamos a ${planet(k).name}. ${INTRO[k]}")
+        say(Frases.llegada(k))
         screen = Screen.Intro(pi)
     }
 
@@ -208,7 +195,7 @@ class Game(context: Context) {
         title = "¡Diploma galáctico!"
         react(Mood.HAPPY)
         tone(523, 659, 784, 1046)
-        say("¡Lo lograste, ${save.name}! Superaste los ${RETO.size} planetas.")
+        say(Frases.diploma(save.name))
         celebrate(true)
         screen = Screen.Diploma
     }
@@ -219,7 +206,7 @@ class Game(context: Context) {
         session = null
         title = "Voz de Marty"
         react(Mood.NONE)
-        say("Elige la voz que mejor se entienda. Toca \"Probar\" para escucharla.")
+        say(Frases.VOZ)
         screen = Screen.Voice
     }
 
@@ -249,7 +236,7 @@ class Game(context: Context) {
         tone(200, 150)
         haptics.wrong()
         react(Mood.SAD)
-        say("¡Casi! Prueba otra vez.")
+        say(Frases.CASI)
     }
 
     fun win(credit: Boolean, quiet: Boolean = false) {
@@ -262,7 +249,7 @@ class Game(context: Context) {
         haptics.right()
         // Si Marty habla, ya dice la palabra en su felicitación; si no, se dicta la palabra sola.
         if (!quiet && !speech.hostOn) speak(s.word.text)
-        say(listOf("¡Muy bien!", "¡Excelente!", "¡Lo lograste!", "¡Qué listo eres!", "¡Genial!", "¡Fantástico!", "¡Eres una estrella!").random() + " " + s.word.text)
+        say(Frases.acierto(s.word.text))
         celebrate(false)
         later(s, 1500)
     }
@@ -300,16 +287,7 @@ class Game(context: Context) {
             celebrate(true)
         } else tone(300, 260)
         val name = planet(k).name
-        say(
-            if (reto) {
-                if (pass) "¡Superaste $name! Ganaste $st ${if (st == 1) "estrella" else "estrellas"}."
-                else "Necesitas al menos 3 aciertos para pasar. ¡Inténtalo otra vez!"
-            } else when {
-                st == 3 -> "¡Eres un campeón de $name!"
-                st >= 1 -> "¡Muy bien! Sigue practicando."
-                else -> "¡Buen intento! Practiquemos más."
-            }
-        )
+        say(Frases.finPlaneta(k, reto, pass, st))
         title = name
         session = null
         screen = Screen.End(k, s.ctx, s.ok, st, pass)
@@ -329,7 +307,7 @@ class Game(context: Context) {
         session = null
         title = "Ataque de las palabras"
         react(Mood.NONE)
-        say("¡Jajaja! Voy a ensuciar todas las palabras. ¡A ver si las escribes bien!", Who.BORRON)
+        say(Frases.ATAQUE_INICIO)
         screen = Screen.Attack
     }
 
@@ -342,7 +320,7 @@ class Game(context: Context) {
             tone(523, 659, 784)
             celebrate(true)
         } else tone(300, 260)
-        say(if (ok >= 7) "¡Me ganaste! Escribes muy bien." else "¡Jajaja! Esta vez gané yo. ¿Revancha?", Who.BORRON)
+        say(if (ok >= 7) Frases.ATAQUE_GANASTE else Frases.ATAQUE_PERDISTE)
         screen = Screen.AttackEnd(score, ok, rec)
     }
 }

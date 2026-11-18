@@ -90,7 +90,7 @@ fun PantanoGame(g: Game, s: Session) {
     val time = rememberTime()
     val flies = remember { Fireflies(14, 18f, 92f, Color(0xFFF3FF8A)) }
 
-    LaunchedEffect(Unit) { g.say("Toca los nenúfares para descubrir la palabra. ¡Cuidado con las tildes!") }
+    LaunchedEffect(Unit) { g.say(Frases.PANTANO_INICIO) }
 
     fun hang(p: Pad) {
         val c = p.c
@@ -113,13 +113,13 @@ fun PantanoGame(g: Game, s: Session) {
             g.tone(200, 150)
             val tilde = word.any { it != c && norm(it) == c && got[it] != true }
             g.react(Mood.SAD)
-            g.say(if (tilde) "¡Cuidado! Esa letra sí está, pero lleva tilde, diéresis o es otra letra." else "Esa letra no está.")
+            g.say(if (tilde) Frases.PANTANO_TILDE else Frases.PANTANO_NO_ESTA)
             ripples += Ripple(p.x, p.y, true, now)
             fxKind = 2; fxAt = now
             if (lives <= 0) {
                 s.locked = true
                 lost = true
-                g.say("¡Jajaja! Era ${s.word.text}.", Who.BORRON)
+                g.say(Frases.pantanoPerdiste(s.word.text))
                 g.react(Mood.HAPPY)
                 g.later(s, 2400)
             }

@@ -67,7 +67,7 @@ fun LeeGame(g: Game, s: Session) {
     val shakes = remember { mutableStateMapOf<Int, Float>() }
     val time = rememberTime()
 
-    LaunchedEffect(Unit) { g.say("¡Festival de barriletes! Lee y toca el barrilete con la palabra del dibujo.") }
+    LaunchedEffect(Unit) { g.say(Frases.LEE_INICIO) }
 
     fun choose(i: Int) {
         if (s.locked) return

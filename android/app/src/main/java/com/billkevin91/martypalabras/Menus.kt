@@ -286,7 +286,7 @@ fun VoiceScreen(g: Game) {
         try {
             ctx.startActivity(android.content.Intent(action).addFlags(android.content.Intent.FLAG_ACTIVITY_NEW_TASK))
         } catch (_: Exception) {
-            g.say("No pude abrir los ajustes de voz de este teléfono. Búscalos en Ajustes → Accesibilidad → Texto a voz.")
+            g.say(Frases.SIN_AJUSTES)
         }
     }
     GameCard {
@@ -298,12 +298,12 @@ fun VoiceScreen(g: Game) {
             }
             CandyBox(if (sp.hostOn) C.leaf else Color(0xFF4A3BA8), 50.dp, padding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), onClick = {
                 sp.setHost(!sp.hostOn)
-                if (sp.hostOn) g.say("¡Hola! Soy Marty, tu presentador. ¡Vamos a jugar con las palabras!")
+                if (sp.hostOn) g.say(Frases.SOY_MARTY)
             }) { Text(if (sp.hostOn) "Sí" else "No", style = display(18, if (sp.hostOn) C.onColor else C.ink)) }
         }
         Buttons {
-            Ghost("Probar a Marty", icon = { SpeakerIcon() }) { g.say("¡Hola! Soy Marty, tu presentador. ¡Vamos a jugar con las palabras!") }
-            Ghost("Probar a Borrón", icon = { SpeakerIcon() }) { g.say("¡Jajaja! Soy Borrón y voy a ensuciar todas tus palabras.", Who.BORRON) }
+            Ghost("Probar a Marty", icon = { SpeakerIcon() }) { g.say(Frases.SOY_MARTY) }
+            Ghost("Probar a Borrón", icon = { SpeakerIcon() }) { g.say(Frases.SOY_BORRON) }
         }
         Text("Velocidad", style = display(19))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
