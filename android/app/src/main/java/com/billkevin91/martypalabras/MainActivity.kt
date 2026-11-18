@@ -104,7 +104,7 @@ fun App(g: Game) {
             Column(Modifier.widthIn(max = 640.dp).fillMaxWidth(), verticalArrangement = Arrangement.spacedBy(if (g.screen == Screen.Play) 10.dp else 16.dp)) {
                 HostBar(g)
                 // Durante el juego el título es pequeño: el espacio es para la escena.
-                Text(g.title, style = display(if (g.screen == Screen.Play) 22 else 34))
+                Logo(g.title, if (g.screen == Screen.Play) 22 else 34)
                 Screens(g)
             }
         }
@@ -139,5 +139,22 @@ private fun PlayScreen(g: Game) {
             "falta" -> FaltaGame(g, s)
             else -> LeeGame(g, s)
         }
+    }
+}
+
+/** Título estilo videojuego: letras con degradado dorado, contorno grueso y sombra. */
+@Composable
+fun Logo(text: String, size: Int) {
+    val base = display(size)
+    val d = androidx.compose.ui.platform.LocalDensity.current.density
+    Box {
+        Text(text, style = base.copy(color = Ink, drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = size * .14f * d, join = androidx.compose.ui.graphics.StrokeJoin.Round)))
+        Text(
+            text,
+            style = base.copy(
+                brush = Brush.verticalGradient(listOf(Color.White, Color(0xFFFFF3B0), Color(0xFFFFC93C))),
+                shadow = androidx.compose.ui.graphics.Shadow(Color(0xFF7A5AE0), Offset(0f, size * .12f), size * .25f),
+            ),
+        )
     }
 }

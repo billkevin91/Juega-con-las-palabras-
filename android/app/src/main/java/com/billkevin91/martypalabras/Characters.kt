@@ -6,6 +6,8 @@ import androidx.compose.foundation.Canvas
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.layout.Arrangement
+import androidx.compose.foundation.layout.Box
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.fillMaxWidth
@@ -331,12 +333,27 @@ fun HostBar(g: Game) {
         ) {
             group(s = size.width / 100f) { if (borron) borron(t, g.mood) else martyBust(t, g.mood) }
         }
-        Column(
-            Modifier.fillMaxWidth().clip(RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp)).background(C.card)
-                .border(2.dp, C.line, RoundedCornerShape(18.dp, 18.dp, 18.dp, 4.dp)).padding(horizontal = 14.dp, vertical = 9.dp)
+        // Globo de diálogo con colita apuntando al personaje
+        val accent = if (borron) C.berry else C.sun
+        Box(
+            Modifier.fillMaxWidth().drawBehind {
+                val tail = Path().apply {
+                    moveTo(2.dp.toPx(), size.height * .62f)
+                    lineTo(-10.dp.toPx(), size.height * .78f)
+                    lineTo(2.dp.toPx(), size.height * .86f)
+                    close()
+                }
+                drawPath(tail, Color(0xFF2B2270))
+                drawPath(tail, accent, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
+            }
         ) {
-            Text(if (borron) "BORRÓN" else "MARTY", style = body(12, if (borron) C.berry else C.sun, FontWeight.ExtraBold).copy(letterSpacing = 1.2.sp))
-            Text(g.text, style = body(16, weight = FontWeight.ExtraBold))
+            val shape = RoundedCornerShape(20.dp)
+            Column(
+                Modifier.fillMaxWidth().panel(shape).border(2.dp, accent.copy(alpha = .7f), shape).padding(horizontal = 14.dp, vertical = 9.dp)
+            ) {
+                Text(if (borron) "BORRÓN" else "MARTY", style = body(12, accent, FontWeight.ExtraBold).copy(letterSpacing = 1.2.sp))
+                Text(g.text, style = body(16, weight = FontWeight.ExtraBold))
+            }
         }
     }
 }

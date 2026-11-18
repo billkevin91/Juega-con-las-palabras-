@@ -5,6 +5,16 @@ import androidx.compose.foundation.background
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.interaction.MutableInteractionSource
+import androidx.compose.foundation.interaction.collectIsPressedAsState
+import androidx.compose.foundation.layout.BoxScope
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.offset
+import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Size
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.graphics.lerp as colorLerp
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
@@ -84,11 +94,57 @@ fun body(size: Int, color: Color = C.ink, weight: FontWeight = FontWeight.Bold) 
 fun Modifier.tap(enabled: Boolean = true, onClick: () -> Unit): Modifier =
     clickable(remember { MutableInteractionSource() }, null, enabled) { onClick() }
 
+/**
+ * Relieve de botón tipo caramelo: cara con degradado, canto más oscuro abajo, brillo arriba y sombra.
+ * Cuando [pressed] la cara baja hasta el canto, como un botón de verdad.
+ */
+fun Modifier.candy(color: Color, pressed: Boolean, radius: Dp, depth: Dp = 5.dp): Modifier = drawBehind {
+    val d = depth.toPx()
+    val r = minOf(radius.toPx(), (size.height - d) / 2)
+    val cr = CornerRadius(r, r)
+    val faceH = size.height - d
+    val off = if (pressed) d * .75f else 0f
+    drawRoundRect(Color(0x40000000), Offset(2f, d + 3f), Size(size.width - 4f, faceH), cr)
+    drawRoundRect(colorLerp(color, Color(0xFF14082E), .45f), Offset(0f, d), Size(size.width, faceH), cr)
+    drawRoundRect(
+        Brush.verticalGradient(listOf(colorLerp(color, Color.White, .25f), color, colorLerp(color, Color(0xFF14082E), .12f)), off, off + faceH),
+        Offset(0f, off), Size(size.width, faceH), cr,
+    )
+    val g = 3.dp.toPx()
+    drawRoundRect(
+        Brush.verticalGradient(listOf(Color.White.copy(alpha = .45f), Color.White.copy(alpha = 0f)), off + g, off + faceH * .55f),
+        Offset(g * 2, off + g), Size(size.width - g * 4, faceH * .45f), CornerRadius(r * .8f, r * .8f),
+    )
+    drawRoundRect(colorLerp(color, Color(0xFF14082E), .55f), Offset(0f, off), Size(size.width, faceH), cr, style = Stroke(2.dp.toPx()))
+}
+
+/** Caja que se pulsa con relieve de caramelo; el contenido baja junto con la cara del botón. */
+@Composable
+fun CandyBox(
+    color: Color, radius: Dp, modifier: Modifier = Modifier, enabled: Boolean = true, depth: Dp = 5.dp,
+    padding: PaddingValues = PaddingValues(0.dp), onClick: () -> Unit, content: @Composable BoxScope.() -> Unit,
+) {
+    val src = remember { MutableInteractionSource() }
+    val pressed by src.collectIsPressedAsState()
+    Box(
+        modifier.candy(color, pressed && enabled, radius, depth).clickable(src, null, enabled) { onClick() }.padding(bottom = depth),
+        contentAlignment = Alignment.Center,
+    ) {
+        Box(Modifier.offset(y = if (pressed && enabled) depth * .75f else 0.dp).padding(padding), contentAlignment = Alignment.Center) { content() }
+    }
+}
+
+/** Fondo de tarjeta: degradado violeta, borde con brillo arriba y sombra de color. */
+fun Modifier.panel(shape: androidx.compose.ui.graphics.Shape): Modifier =
+    shadow(12.dp, shape, ambientColor = Color(0xFF7A5AE0), spotColor = Color(0xFF5A3FC0)).clip(shape)
+        .background(Brush.verticalGradient(listOf(Color(0xFF3A2E92), C.card, Color(0xFF211960))))
+        .border(2.dp, Brush.verticalGradient(listOf(Color(0xFF8C7BF0), C.line, Color(0xFF2E2470))), shape)
+
 @Composable
 fun GameCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
     val shape = RoundedCornerShape(28.dp)
     Column(
-        modifier.fillMaxWidth().clip(shape).background(C.card).border(2.dp, C.line, shape).padding(12.dp),
+        modifier.fillMaxWidth().panel(shape).padding(12.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
         verticalArrangement = Arrangement.spacedBy(14.dp),
         content = content,
@@ -97,16 +153,13 @@ fun GameCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() 
 
 @Composable
 fun Ghost(text: String, primary: Boolean = false, icon: (@Composable () -> Unit)? = null, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(50)
-    Row(
-        Modifier.clip(shape).background(if (primary) C.berry else C.space2)
-            .border(2.dp, if (primary) C.berry else C.line, shape)
-            .tap(onClick = onClick).padding(horizontal = 18.dp, vertical = 11.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(8.dp),
+    CandyBox(
+        if (primary) C.berry else Color(0xFF4A3BA8), 50.dp, padding = PaddingValues(horizontal = 18.dp, vertical = 10.dp), onClick = onClick,
     ) {
-        if (icon != null) icon()
-        Text(text, style = body(16, if (primary) Color.White else C.ink, FontWeight.ExtraBold))
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+            if (icon != null) icon()
+            Text(text, style = body(16, Color.White, FontWeight.ExtraBold).copy(shadow = Shadow(Color(0x66000000), Offset(0f, 2f), 3f)))
+        }
     }
 }
 
@@ -126,7 +179,14 @@ const val STAR = "M12 2l3.1 6.6 7.2.9-5.3 5 1.4 7.1L12 18l-6.4 3.6L7 14.5l-5.3-5
 fun StarsRow(n: Int, size: Dp) {
     Row(horizontalArrangement = Arrangement.spacedBy(size / 10)) {
         repeat(3) { i ->
-            Canvas(Modifier.size(size)) { group(s = this.size.width / 24f) { path(STAR, if (i < n) C.sun else C.line) } }
+            Canvas(Modifier.size(size)) {
+                group(s = this.size.width / 24f) {
+                    if (i < n) {
+                        path(STAR, Color(0xFFFFD84A), Color(0xFFB87A00), 1.4f)
+                        path("M8.6 7.6l2.4-4", stroke = Color.White, sw = 1.3f, alpha = .8f)
+                    } else path(STAR, Color(0xFF2E2470), C.line, 1.2f)
+                }
+            }
         }
     }
 }
@@ -195,9 +255,11 @@ fun PlanetBall(a: Color, b: Color, ring: Boolean, size: Dp) {
 fun ProgressDots(i: Int) {
     Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(6.dp, Alignment.CenterHorizontally)) {
         repeat(N) { k ->
+            val c = if (k < i) C.leaf else if (k == i) C.sun else C.line
             Box(
-                Modifier.widthIn(max = 56.dp).weight(1f).height(10.dp).clip(RoundedCornerShape(6.dp))
-                    .background(if (k < i) C.leaf else if (k == i) C.sun else C.line)
+                Modifier.widthIn(max = 56.dp).weight(1f).height(12.dp).clip(RoundedCornerShape(6.dp))
+                    .background(Brush.verticalGradient(listOf(colorLerp(c, Color.White, .35f), c, colorLerp(c, Color.Black, .25f))))
+                    .border(1.dp, colorLerp(c, Color.Black, .35f), RoundedCornerShape(6.dp))
             )
         }
     }
@@ -219,14 +281,13 @@ fun Hint(text: String) = Text(text, style = body(15, C.muted), textAlign = TextA
 
 @Composable
 fun OptTile(text: String, bg: Color, state: Int = 0, wide: Boolean = false, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(16.dp)
-    var m = Modifier.clip(shape).background(bg)
-    if (state == 1) m = m.border(4.dp, C.leaf, shape)
-    if (state == 2) m = m.border(4.dp, C.bad, shape)
-    Box(
-        m.tap(onClick = onClick).height(58.dp).widthIn(min = if (wide) 118.dp else 54.dp).padding(horizontal = 14.dp),
-        contentAlignment = Alignment.Center,
-    ) {
-        Text(if (wide) text else text.uppercase(), style = display(if (wide) 24 else 28, C.onColor))
+    val ring = when (state) { 1 -> C.leaf; 2 -> C.bad; else -> Color.Transparent }
+    Box(Modifier.border(4.dp, ring, RoundedCornerShape(19.dp)).padding(3.dp)) {
+        CandyBox(
+            bg, 16.dp, Modifier.height(64.dp).widthIn(min = if (wide) 118.dp else 58.dp),
+            padding = PaddingValues(horizontal = 14.dp), onClick = onClick,
+        ) {
+            Text(if (wide) text else text.uppercase(), style = display(if (wide) 24 else 28, C.onColor).copy(shadow = Shadow(Color(0x55FFFFFF), Offset(0f, 2f), 0f)))
+        }
     }
 }

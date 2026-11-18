@@ -200,6 +200,7 @@ fun FaltaGame(g: Game, s: Session) {
 
 /** Caja de madera (0..100): 0 normal, 1 recién colocada (brilla), 2 equivocada (rojiza). */
 private fun DrawScope.crate(state: Int) {
+    ellipse(50f, 100f, 44f, 6f, Color.Black, alpha = .3f)
     if (state == 1) circle(50f, 50f, 62f, Color(0xFFFFF36A), alpha = .35f)
     val wood = if (state == 2) vGrad(0f, 100f, 0f to Color(0xFFFFB0A8), 1f to Color(0xFFD9675E))
     else vGrad(0f, 100f, 0f to Color(0xFFFFD99A), 1f to Color(0xFFE0A050))

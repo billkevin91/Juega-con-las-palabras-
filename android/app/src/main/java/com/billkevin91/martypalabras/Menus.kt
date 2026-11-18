@@ -12,6 +12,8 @@ import androidx.compose.foundation.layout.aspectRatio
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.PaddingValues
+import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.shape.RoundedCornerShape
@@ -29,6 +31,8 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.graphics.Shadow
+import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.input.ImeAction
 import androidx.compose.ui.text.input.KeyboardCapitalization
@@ -41,17 +45,18 @@ import java.util.Locale
 
 @Composable
 fun ModeButton(planetArt: @Composable () -> Unit, title: String, desc: String, onClick: () -> Unit) {
-    val shape = RoundedCornerShape(22.dp)
-    Row(
-        Modifier.fillMaxWidth().clip(shape).background(C.card).border(2.dp, C.line, shape).tap(onClick = onClick)
-            .padding(horizontal = 16.dp, vertical = 14.dp),
-        verticalAlignment = Alignment.CenterVertically,
-        horizontalArrangement = Arrangement.spacedBy(14.dp),
-    ) {
-        planetArt()
-        Column {
-            Text(title, style = display(21))
-            Text(desc, style = body(15, C.muted))
+    CandyBox(Color(0xFF3A2E92), 22.dp, Modifier.fillMaxWidth(), depth = 6.dp, padding = PaddingValues(horizontal = 16.dp, vertical = 12.dp), onClick = onClick) {
+        Row(
+            Modifier.fillMaxWidth(),
+            verticalAlignment = Alignment.CenterVertically,
+            horizontalArrangement = Arrangement.spacedBy(14.dp),
+        ) {
+            planetArt()
+            Column(Modifier.weight(1f)) {
+                Text(title, style = display(21).copy(shadow = Shadow(Color(0x88000000), Offset(0f, 2f), 3f)))
+                Text(desc, style = body(15, Color(0xFFD4CCFF)))
+            }
+            Text("›", style = display(34, C.sun))
         }
     }
 }
@@ -62,9 +67,10 @@ fun HomeScreen(g: Game) {
     val tm = rememberTextMeasurer()
     val done = RETO.count { g.save.best(it) > 0 }
     Column(verticalArrangement = Arrangement.spacedBy(12.dp)) {
-        Canvas(
-            Modifier.fillMaxWidth().aspectRatio(16f / 9f).clip(RoundedCornerShape(22.dp)).border(3.dp, Ink, RoundedCornerShape(22.dp))
-        ) { heroScene(t, tm) }
+        Box(Modifier.scene(16f / 9f, Ink, 22.dp, 3.dp)) {
+            Canvas(Modifier.fillMaxSize()) { heroScene(t, tm) }
+            Sparkles(Color(0xFFFFF3B0))
+        }
         LevelPicker(g)
         ModeButton({ PlanetBall(Color(0xFFFFE07A), Color(0xFFE08A00), true, 56.dp) },
             "Desafío Galáctico", "Visita los ${RETO.size} planetas, gana medallas y un diploma. Superados: $done de ${RETO.size}") { g.retoStart() }
@@ -81,7 +87,7 @@ fun HomeScreen(g: Game) {
 fun LevelPicker(g: Game) {
     val shape = RoundedCornerShape(22.dp)
     Column(
-        Modifier.fillMaxWidth().clip(shape).background(C.card).border(2.dp, C.line, shape).padding(12.dp),
+        Modifier.fillMaxWidth().panel(shape).padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -90,19 +96,18 @@ fun LevelPicker(g: Game) {
             Level.entries.forEachIndexed { i, l ->
                 val on = g.level == l
                 val col = listOf(C.leaf, C.sun, C.berry)[i]
-                val s = RoundedCornerShape(16.dp)
-                Column(
-                    Modifier.weight(1f).clip(s).background(if (on) col else C.space2)
-                        .border(3.dp, if (on) Color.White else C.line, s).tap { g.changeLevel(l) }
-                        .padding(vertical = 8.dp),
-                    horizontalAlignment = Alignment.CenterHorizontally,
+                CandyBox(
+                    if (on) col else Color(0xFF3F3299), 16.dp, Modifier.weight(1f).border(3.dp, if (on) Color.White else Color.Transparent, RoundedCornerShape(16.dp)),
+                    padding = PaddingValues(vertical = 6.dp), onClick = { g.changeLevel(l) },
                 ) {
-                    Row {
-                        repeat(i + 1) {
-                            Canvas(Modifier.size(16.dp)) { group(s = size.width / 24f) { path(STAR, if (on) C.onColor else C.sun) } }
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Row {
+                            repeat(i + 1) {
+                                Canvas(Modifier.size(16.dp)) { group(s = size.width / 24f) { path(STAR, Color(0xFFFFD84A), Color(0xFF8A5A00), 1.5f) } }
+                            }
                         }
+                        Text(l.label, style = display(18, if (on) C.onColor else C.ink))
                     }
-                    Text(l.label, style = display(18, if (on) C.onColor else C.ink))
                 }
             }
         }
@@ -117,17 +122,16 @@ fun PickerScreen(g: Game) {
         PLANETS.chunked(2).forEach { row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 row.forEach { p ->
-                    val shape = RoundedCornerShape(22.dp)
-                    Column(
-                        Modifier.weight(1f).clip(shape).background(C.card).border(2.dp, C.line, shape)
-                            .tap { g.play(p.key, Ctx(reto = false)) }.padding(horizontal = 10.dp, vertical = 16.dp),
-                        horizontalAlignment = Alignment.CenterHorizontally,
-                        verticalArrangement = Arrangement.spacedBy(8.dp),
+                    CandyBox(
+                        Color(0xFF3A2E92), 22.dp, Modifier.weight(1f), depth = 6.dp,
+                        padding = PaddingValues(horizontal = 10.dp, vertical = 12.dp), onClick = { g.play(p.key, Ctx(reto = false)) },
                     ) {
-                        PlanetBall(p, 64.dp)
-                        Text(p.name, style = display(21), textAlign = TextAlign.Center)
-                        Text(p.desc, style = body(14, C.muted), textAlign = TextAlign.Center)
-                        StarsRow(g.save.best(p.key), 18.dp)
+                        Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
+                            PlanetBall(p, 76.dp)
+                            Text(p.name, style = display(21).copy(shadow = Shadow(Color(0x88000000), Offset(0f, 2f), 3f)), textAlign = TextAlign.Center)
+                            Text(p.desc, style = body(14, Color(0xFFD4CCFF)), textAlign = TextAlign.Center)
+                            StarsRow(g.save.best(p.key), 20.dp)
+                        }
                     }
                 }
             }

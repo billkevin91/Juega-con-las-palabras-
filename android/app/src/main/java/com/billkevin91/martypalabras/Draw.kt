@@ -8,6 +8,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.runtime.withFrameNanos
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.geometry.Rect
 import androidx.compose.ui.geometry.Size
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -18,6 +19,7 @@ import androidx.compose.ui.graphics.drawscope.DrawScope
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.isSpecified
+import androidx.compose.ui.graphics.lerp as colorLerp
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -34,10 +36,13 @@ val Ink = Color(0xFF1B0F3A)
 
 object Paths {
     private val cache = HashMap<String, Path>()
+    private val bounds = HashMap<String, Rect>()
     fun of(d: String): Path {
-        if (cache.size > 6000) cache.clear()
+        if (cache.size > 6000) { cache.clear(); bounds.clear() }
         return cache.getOrPut(d) { PathParser().parsePathString(plain(d)).toPath() }
     }
+
+    fun boundsOf(d: String): Rect = bounds.getOrPut(d) { of(d).getBounds() }
 
     /** Los números generados en Kotlin pueden salir como 1.2E-15: los paso a decimales normales. */
     private val EXP = Regex("-?[0-9]*\\.?[0-9]+[eE][-+]?[0-9]+")
@@ -47,12 +52,56 @@ object Paths {
 
 private fun outline(sw: Float) = Stroke(sw, cap = StrokeCap.Round, join = StrokeJoin.Round)
 
+/* ---------- Volumen automático ----------
+ * Todo relleno de color liso (y opaco) se pinta con luz: más claro arriba / a la izquierda y más
+ * oscuro abajo. Así ningún dibujo se ve plano. Los degradados se guardan para no crearlos en
+ * cada fotograma; las formas se dibujan trasladadas para que el degradado sirva en cualquier posición.
+ */
+object Shade {
+    /** Se puede apagar para dibujar algo totalmente plano (por ejemplo, siluetas). */
+    var on = true
+    private val cache = HashMap<Any, Brush>()
+
+    fun brush(key: Any, make: () -> Brush): Brush {
+        if (cache.size > 3000) cache.clear()
+        return cache.getOrPut(key, make)
+    }
+
+    fun light(c: Color, f: Float) = colorLerp(c, Color.White, f)
+    fun dark(c: Color, f: Float) = colorLerp(c, Color(0xFF14082E), f)
+    fun applies(fill: Color, alpha: Float, size: Float) = on && alpha >= .95f && fill.alpha >= .95f && size >= 6f
+}
+
+private data class LinKey(val c: ULong, val h: Float)
+private data class RadKey(val c: ULong, val rx: Float, val ry: Float)
+private data class PathKey(val c: ULong, val d: String)
+
+private fun linear(c: Color, h: Float) = Shade.brush(LinKey(c.value, h)) {
+    Brush.verticalGradient(0f to Shade.light(c, .28f), .45f to c, 1f to Shade.dark(c, .22f), startY = 0f, endY = h)
+}
+
+/** Luz redonda para círculos y óvalos: el brillo cae arriba a la izquierda. */
+private fun radial(c: Color, rx: Float, ry: Float) = Shade.brush(RadKey(c.value, rx, ry)) {
+    Brush.radialGradient(
+        0f to Shade.light(c, .38f), .35f to c, 1f to Shade.dark(c, .25f),
+        center = Offset(rx * .62f, ry * .55f), radius = maxOf(rx, ry) * 1.55f,
+    )
+}
+
 fun DrawScope.path(
     d: String, fill: Color = Color.Unspecified, stroke: Color = Color.Unspecified,
     sw: Float = 3f, alpha: Float = 1f, brush: Brush? = null,
 ) {
     val p = Paths.of(d)
-    if (brush != null) drawPath(p, brush, alpha) else if (fill.isSpecified) drawPath(p, fill, alpha)
+    if (brush != null) drawPath(p, brush, alpha) else if (fill.isSpecified) {
+        val b = Paths.boundsOf(d)
+        if (Shade.applies(fill, alpha, b.height)) {
+            val br = Shade.brush(PathKey(fill.value, d)) {
+                Brush.verticalGradient(0f to Shade.light(fill, .28f), .45f to fill, 1f to Shade.dark(fill, .22f), startY = b.top, endY = b.bottom)
+            }
+            drawPath(p, br, alpha)
+        } else drawPath(p, fill, alpha)
+    }
     if (stroke.isSpecified) drawPath(p, stroke, alpha, style = outline(sw))
 }
 
@@ -61,7 +110,12 @@ fun DrawScope.circle(
     sw: Float = 3f, alpha: Float = 1f, brush: Brush? = null,
 ) {
     val c = Offset(cx, cy)
-    if (brush != null) drawCircle(brush, r, c, alpha) else if (fill.isSpecified) drawCircle(fill, r, c, alpha)
+    if (brush != null) drawCircle(brush, r, c, alpha) else if (fill.isSpecified) {
+        if (Shade.applies(fill, alpha, r * 2)) {
+            val br = radial(fill, r, r)
+            withTransform({ translate(cx - r, cy - r) }) { drawCircle(br, r, Offset(r, r), alpha) }
+        } else drawCircle(fill, r, c, alpha)
+    }
     if (stroke.isSpecified) drawCircle(stroke, r, c, alpha, style = outline(sw))
 }
 
@@ -71,7 +125,12 @@ fun DrawScope.ellipse(
 ) {
     val tl = Offset(cx - rx, cy - ry)
     val s = Size(rx * 2, ry * 2)
-    if (brush != null) drawOval(brush, tl, s, alpha) else if (fill.isSpecified) drawOval(fill, tl, s, alpha)
+    if (brush != null) drawOval(brush, tl, s, alpha) else if (fill.isSpecified) {
+        if (Shade.applies(fill, alpha, ry * 2)) {
+            val br = radial(fill, rx, ry)
+            withTransform({ translate(tl.x, tl.y) }) { drawOval(br, Offset.Zero, s, alpha) }
+        } else drawOval(fill, tl, s, alpha)
+    }
     if (stroke.isSpecified) drawOval(stroke, tl, s, alpha, style = outline(sw))
 }
 
@@ -82,7 +141,12 @@ fun DrawScope.rect(
     val tl = Offset(x, y)
     val s = Size(w, h)
     val cr = CornerRadius(r, r)
-    if (brush != null) drawRoundRect(brush, tl, s, cr, alpha) else if (fill.isSpecified) drawRoundRect(fill, tl, s, cr, alpha = alpha)
+    if (brush != null) drawRoundRect(brush, tl, s, cr, alpha) else if (fill.isSpecified) {
+        if (Shade.applies(fill, alpha, h)) {
+            val br = linear(fill, h)
+            withTransform({ translate(x, y) }) { drawRoundRect(br, Offset.Zero, s, cr, alpha) }
+        } else drawRoundRect(fill, tl, s, cr, alpha = alpha)
+    }
     if (stroke.isSpecified) drawRoundRect(stroke, tl, s, cr, alpha = alpha, style = outline(sw))
 }
 

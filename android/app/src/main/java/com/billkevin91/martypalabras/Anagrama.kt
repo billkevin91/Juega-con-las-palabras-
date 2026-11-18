@@ -62,6 +62,7 @@ private val RB_HEAD = fluff(50f, 62f, 27f, 23f, 12, .09f)
 
 /** Conejito esponjoso (unidades 0..100 × 0..130). */
 private fun DrawScope.rabbit(i: Int, t: Float, droop: Float) {
+    ellipse(50f, 128f, 36f, 6f, Color.Black, alpha = .28f)
     val c = SIGNC[i % SIGNC.size]
     val d = i * .45f
     fun earAngle(phase: Float): Float {

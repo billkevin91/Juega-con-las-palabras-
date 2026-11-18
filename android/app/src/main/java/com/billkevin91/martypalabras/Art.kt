@@ -2,6 +2,18 @@ package com.billkevin91.martypalabras
 
 import androidx.compose.foundation.background
 import androidx.compose.foundation.border
+import androidx.compose.foundation.Canvas
+import androidx.compose.runtime.remember
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.draw.shadow
+import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.geometry.Offset
+import androidx.compose.ui.graphics.Brush
+import androidx.compose.ui.graphics.StrokeCap
+import androidx.compose.ui.graphics.drawscope.Stroke
+import androidx.compose.foundation.layout.fillMaxSize
+import kotlin.math.PI
+import kotlin.math.sin
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.BoxWithConstraints
@@ -26,7 +38,46 @@ import kotlin.random.Random
 /** Contenedor de escena con proporción fija, esquinas redondeadas y borde. */
 fun Modifier.scene(ratio: Float, border: Color = Color(0xFF44399A), radius: Dp = 22.dp, width: Dp = 2.dp): Modifier {
     val shape = RoundedCornerShape(radius)
-    return fillMaxWidth().aspectRatio(ratio).clip(shape).border(width, border, shape)
+    return fillMaxWidth().aspectRatio(ratio).shadow(10.dp, shape, ambientColor = Color(0xFF7A5AE0), spotColor = Color(0xFF7A5AE0))
+        .clip(shape).sceneLight().border(width, border, shape)
+}
+
+/**
+ * Acabado de escena, encima de todo lo dibujado: viñeta (bordes en penumbra), luz suave desde arriba
+ * y un reflejo de cristal en el borde, para que cada escena tenga profundidad y no se vea plana.
+ */
+fun Modifier.sceneLight(): Modifier = drawWithContent {
+    drawContent()
+    val w = size.width
+    val h = size.height
+    drawRect(Brush.radialGradient(listOf(Color.Transparent, Color.Transparent, Color(0x5A0A0420)), Offset(w / 2, h * .45f), maxOf(w, h) * .78f))
+    drawRect(Brush.verticalGradient(0f to Color(0x24FFFFFF), .22f to Color.Transparent))
+    drawRoundRect(
+        Brush.verticalGradient(listOf(Color(0x66FFFFFF), Color.Transparent, Color(0x22FFFFFF))),
+        cornerRadius = CornerRadius(22.dp.toPx()), style = Stroke(3.dp.toPx()),
+    )
+}
+
+/** Destellos mágicos que flotan por la escena (pequeñas estrellas de 4 puntas que se encienden y apagan). */
+@Composable
+fun Sparkles(color: Color = Color.White, count: Int = 14) {
+    val time = rememberTime()
+    val pts = remember { List(count) { floatArrayOf(Random.nextFloat(), Random.nextFloat(), .6f + Random.nextFloat() * .8f, Random.nextFloat() * 6f, 3f + Random.nextFloat() * 3f) } }
+    Canvas(Modifier.fillMaxSize()) {
+        val t = time.value
+        val u = size.width / 100f
+        pts.forEach { (x, y, s, ph, per) ->
+            val p = ((t + ph) % per) / per
+            val a = sin(p * PI.toFloat()).let { it * it }
+            if (a < .02f) return@forEach
+            val cx = size.width * x
+            val cy = size.height * y - u * 4 * p
+            val r = u * 1.6f * s * (.5f + .5f * a)
+            drawCircle(color.copy(alpha = .25f * a), r * 1.6f, Offset(cx, cy))
+            drawLine(color.copy(alpha = a), Offset(cx - r, cy), Offset(cx + r, cy), u * .35f * s, StrokeCap.Round)
+            drawLine(color.copy(alpha = a), Offset(cx, cy - r), Offset(cx, cy + r), u * .35f * s, StrokeCap.Round)
+        }
+    }
 }
 
 /** Coloca un elemento centrado en (x%, y%) de una escena de W×H. */
@@ -47,7 +98,13 @@ fun SceneBox(
         val W = maxWidth
         val H = W / (if (isTall) tall else wide)
         val shape = RoundedCornerShape(22.dp)
-        Box(Modifier.size(W, H).clip(shape).background(bg).border(borderWidth, border, shape)) { content(W, H, isTall) }
+        Box(
+            Modifier.size(W, H).shadow(10.dp, shape, ambientColor = Color(0xFF7A5AE0), spotColor = Color(0xFF7A5AE0))
+                .clip(shape).background(bg).sceneLight().border(borderWidth, border, shape)
+        ) {
+            content(W, H, isTall)
+            Sparkles()
+        }
     }
 }
 
