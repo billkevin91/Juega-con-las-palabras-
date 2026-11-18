@@ -103,7 +103,7 @@ fun BurbujaGame(g: Game, s: Session) {
         repeat(6) { spawn((it + Random.nextFloat()) / 6f) }
         if (sp) {
             delay(400)
-            if (!s.locked) g.speak(s.word.text)
+            if (!s.locked) g.speak(s.word.text, flush = false)
         }
         while (true) {
             delay(750)

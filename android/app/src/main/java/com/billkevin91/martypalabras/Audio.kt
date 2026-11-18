@@ -9,6 +9,8 @@ import android.media.AudioAttributes
 import android.media.AudioFormat
 import android.media.AudioTrack
 import android.media.MediaPlayer
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
 import android.speech.tts.TextToSpeech
 import android.speech.tts.Voice
 import androidx.compose.runtime.getValue
@@ -164,8 +166,14 @@ class Speech(context: Context, private val save: Save) {
         emptySet()
     }
 
+    /** Se llama una vez cuando la voz está lista (para leer el primer mensaje de Marty). */
+    var onReady: (() -> Unit)? = null
+
     private val tts: TextToSpeech = TextToSpeech(app) { status ->
-        if (status == TextToSpeech.SUCCESS) setup()
+        if (status == TextToSpeech.SUCCESS) {
+            setup()
+            if (ready) onReady?.invoke()
+        }
     }
 
     private fun setup() {
@@ -176,7 +184,8 @@ class Speech(context: Context, private val save: Save) {
         } catch (_: Exception) {
             emptyList()
         }
-        val ranked = spanish.sortedByDescending { score(it) }
+        val net = online()
+        val ranked = spanish.sortedByDescending { score(it, net) }
         options = ranked.mapIndexed { i, v -> VoiceOption(v.name, "Voz ${i + 1}", describe(v)) }
         val chosen = ranked.firstOrNull { it.name == save.voice } ?: ranked.firstOrNull()
         if (chosen != null && tts.setVoice(chosen) == TextToSpeech.SUCCESS) {
@@ -194,10 +203,26 @@ class Speech(context: Context, private val save: Save) {
         }
     }
 
-    /** Puntos para ordenar voces: calidad, que funcione sin internet y acento latinoamericano. */
-    private fun score(v: Voice): Int {
+    /** ¿Hay internet ahora? (Las voces "en línea" suenan mucho más naturales, pero lo necesitan.) */
+    private fun online(): Boolean = try {
+        val cm = app.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        cm.getNetworkCapabilities(cm.activeNetwork)?.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET) == true
+    } catch (_: Exception) {
+        false
+    }
+
+    /**
+     * Puntos para ordenar voces: calidad y acento latinoamericano. Con internet ganan las voces en línea
+     * (las más naturales); sin internet quedan al final porque no funcionarían.
+     */
+    private fun score(v: Voice, net: Boolean): Int {
         var s = v.quality
-        if (!v.isNetworkConnectionRequired) s += 40
+        val needsNet = v.isNetworkConnectionRequired || v.name.contains("network")
+        s += when {
+            needsNet && net -> 120
+            needsNet -> -400
+            else -> 40
+        }
         if (v.locale.country in LATAM) s += 60
         if (v.locale.country == "ES") s += 20
         return s
@@ -217,7 +242,7 @@ class Speech(context: Context, private val save: Save) {
             v.quality >= Voice.QUALITY_HIGH -> "calidad alta"
             else -> "calidad normal"
         }
-        val net = if (v.isNetworkConnectionRequired) " · necesita internet" else ""
+        val net = if (v.isNetworkConnectionRequired || v.name.contains("network")) " · en línea (más natural)" else ""
         return "$where · $quality$net"
     }
 
@@ -235,8 +260,36 @@ class Speech(context: Context, private val save: Save) {
         return listOf("mp3", "ogg", "m4a", "wav").map { "$key.$it" }.firstOrNull { it in recordings }
     }
 
-    fun speak(text: String) {
-        stop()
+    /** ¿Marty y Borrón leen en voz alta lo que dicen? (Se puede apagar en "Voz de Marty".) */
+    var hostOn by mutableStateOf(save.hostVoice)
+        private set
+
+    fun setHost(on: Boolean) {
+        hostOn = on
+        save.hostVoice = on
+        if (!on) stop()
+    }
+
+    /**
+     * Voz del presentador: Marty, agudo y alegre; Borrón, grave y travieso.
+     * Corta lo que se estuviera diciendo, para que lo último que pasa en el juego sea lo que se oye.
+     */
+    fun speakHost(text: String, borron: Boolean) {
+        if (!hostOn || !ready) return
+        stopPlayer()
+        val clean = text.replace("\"", "").replace("…", ",").trim()
+        if (clean.isEmpty()) return
+        tts.setSpeechRate(if (borron) save.rate * .95f else save.rate * 1.08f)
+        tts.setPitch(if (borron) .72f else 1.22f)
+        tts.speak(clean, TextToSpeech.QUEUE_FLUSH, null, "host")
+    }
+
+    /**
+     * Dicta una palabra. [flush] = false la pone en cola: se dice cuando Marty termine de hablar
+     * (al empezar una pregunta). El botón "Escuchar" usa flush = true para oírla de inmediato.
+     */
+    fun speak(text: String, flush: Boolean = true) {
+        if (flush) stop()
         recordingFor(text)?.let { file ->
             try {
                 val fd = app.assets.openFd("voz/$file")
@@ -255,12 +308,16 @@ class Speech(context: Context, private val save: Save) {
         tts.setSpeechRate(save.rate)
         tts.setPitch(1.05f)
         // El punto final da la entonación natural de una frase y evita que la palabra suene cortada.
-        tts.speak(text.trim().replaceFirstChar { it.uppercase() } + ".", TextToSpeech.QUEUE_FLUSH, null, "w")
+        tts.speak(text.trim().replaceFirstChar { it.uppercase() } + ".", if (flush) TextToSpeech.QUEUE_FLUSH else TextToSpeech.QUEUE_ADD, null, "w")
+    }
+
+    private fun stopPlayer() {
+        player?.let { try { it.stop(); it.release() } catch (_: Exception) {} }
+        player = null
     }
 
     fun stop() {
-        player?.let { try { it.stop(); it.release() } catch (_: Exception) {} }
-        player = null
+        stopPlayer()
         if (ready) tts.stop()
     }
 

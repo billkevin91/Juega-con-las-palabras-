@@ -290,6 +290,21 @@ fun VoiceScreen(g: Game) {
         }
     }
     GameCard {
+        // Interruptor: Marty y Borrón leen en voz alta sus mensajes
+        Row(Modifier.fillMaxWidth(), verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(10.dp)) {
+            Column(Modifier.weight(1f)) {
+                Text("Marty habla", style = display(19))
+                Text("Marty y Borrón leen en voz alta lo que dicen", style = body(14, C.muted))
+            }
+            CandyBox(if (sp.hostOn) C.leaf else Color(0xFF4A3BA8), 50.dp, padding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), onClick = {
+                sp.setHost(!sp.hostOn)
+                if (sp.hostOn) g.say("¡Hola! Soy Marty, tu presentador. ¡Vamos a jugar con las palabras!")
+            }) { Text(if (sp.hostOn) "Sí" else "No", style = display(18, if (sp.hostOn) C.onColor else C.ink)) }
+        }
+        Buttons {
+            Ghost("Probar a Marty", icon = { SpeakerIcon() }) { g.say("¡Hola! Soy Marty, tu presentador. ¡Vamos a jugar con las palabras!") }
+            Ghost("Probar a Borrón", icon = { SpeakerIcon() }) { g.say("¡Jajaja! Soy Borrón y voy a ensuciar todas tus palabras.", Who.BORRON) }
+        }
         Text("Velocidad", style = display(19))
         Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             listOf("Lenta" to .75f, "Normal" to .9f, "Rápida" to 1.05f).forEach { (label, v) ->
@@ -329,7 +344,7 @@ fun VoiceScreen(g: Game) {
                 Ghost("Probar", icon = { SpeakerIcon() }) { sp.choose(v.id); g.speak("Hola, soy Marty. Árbol, pingüino, murciélago.") }
             }
         }
-        Hint("Consejo: las voces de \"calidad alta\" suenan más naturales. Si todas suenan robóticas, instala las voces de Google (Speech Services by Google) y descarga la voz en español.")
+        Hint("Consejo: las voces \"en línea\" son las más naturales y la app las usa cuando hay internet. Si todas suenan robóticas, instala las voces de Google (Speech Services by Google) y descarga la voz en español.")
         Buttons {
             Ghost("Instalar voces") { open(android.speech.tts.TextToSpeech.Engine.ACTION_INSTALL_TTS_DATA) }
             Ghost("Ajustes de voz") { open("com.android.settings.TTS_SETTINGS") }

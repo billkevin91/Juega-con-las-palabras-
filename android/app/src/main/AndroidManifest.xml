@@ -3,6 +3,8 @@
 
     <!-- Para encontrar el motor de voz del teléfono (Android 11+) -->
     <uses-permission android:name="android.permission.VIBRATE" />
+    <!-- Para saber si hay internet y usar las voces en línea, que suenan más naturales -->
+    <uses-permission android:name="android.permission.ACCESS_NETWORK_STATE" />
 
     <queries>
         <intent>

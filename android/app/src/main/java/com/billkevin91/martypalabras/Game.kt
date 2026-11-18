@@ -60,6 +60,11 @@ class Save(context: Context) {
         get() = p.getFloat("rate", 0.9f)
         set(v) = p.edit().putFloat("rate", v).apply()
 
+    /** Marty y Borrón leen en voz alta sus mensajes. */
+    var hostVoice: Boolean
+        get() = p.getBoolean("hostVoice", true)
+        set(v) = p.edit().putBoolean("hostVoice", v).apply()
+
     fun best(k: String) = p.getInt("best_$k", 0)
     fun setBest(k: String, v: Int) = p.edit().putInt("best_$k", v).apply()
 }
@@ -98,6 +103,11 @@ class Game(context: Context) {
         party++
     }
 
+    init {
+        // El primer saludo llega antes de que cargue la voz: se lee en cuanto esté lista.
+        speech.onReady = { speech.speakHost(text, who == Who.BORRON) }
+    }
+
     /** Dificultad elegida; se guarda en el teléfono. */
     var level by mutableStateOf(save.level)
         private set
@@ -120,6 +130,7 @@ class Game(context: Context) {
     fun say(t: String, w: Who = Who.MARTY) {
         text = t
         who = w
+        speech.speakHost(t, w == Who.BORRON)
     }
 
     fun react(m: Mood) {
@@ -129,7 +140,7 @@ class Game(context: Context) {
 
     fun tone(vararg f: Int) = sound.tone(*f)
     fun sfx(s: Sfx) = sound.sfx(s)
-    fun speak(s: String) = speech.speak(s)
+    fun speak(s: String, flush: Boolean = true) = speech.speak(s, flush)
 
     fun close() {
         scope.cancel()
@@ -249,7 +260,8 @@ class Game(context: Context) {
         react(Mood.HAPPY)
         tone(523, 659, 784)
         haptics.right()
-        if (!quiet) speak(s.word.text)
+        // Si Marty habla, ya dice la palabra en su felicitación; si no, se dicta la palabra sola.
+        if (!quiet && !speech.hostOn) speak(s.word.text)
         say(listOf("¡Muy bien!", "¡Excelente!", "¡Lo lograste!", "¡Qué listo eres!", "¡Genial!", "¡Fantástico!", "¡Eres una estrella!").random() + " " + s.word.text)
         celebrate(false)
         later(s, 1500)

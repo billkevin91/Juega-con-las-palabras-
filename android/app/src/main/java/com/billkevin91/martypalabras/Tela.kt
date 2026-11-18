@@ -221,7 +221,7 @@ fun TelaGame(g: Game, s: Session) {
         g.say(if (sp) "Escucha la palabra y escríbela en el teclado. ¡Las arañas te traerán cada letra!" else "Tu teléfono no puede hablar. Mira la pantalla y escribe la palabra en el teclado.")
         if (sp) {
             delay(400)
-            if (!s.locked) g.speak(w)
+            if (!s.locked) g.speak(w, flush = false)
         }
     }
 
