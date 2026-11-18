@@ -142,10 +142,10 @@ fun androidx.compose.ui.graphics.drawscope.DrawScope.landing(t: Float, p: Planet
     val top = h * .52f
     inset(left, top, w - left - s, h - top - s) { planetBall(p.a, p.b, p.ring, p.key, t) }
     // la globo-nave baja y luego flota
-    val k = minOf(w / 640f, h / 360f) * .55f
+    val k = minOf(w / 640f, h / 360f) * .78f
     val p0 = (t / 2.2f).coerceIn(0f, 1f)
     val ease = 1f - (1f - p0) * (1f - p0) * (1f - p0)
-    val y = lerp(-h * .9f, h * .05f, ease) + if (p0 >= 1f) 6f * k * sin(t * 2f) else 0f
+    val y = lerp(-h * 1.1f, -h * .06f, ease) + if (p0 >= 1f) 6f * k * sin(t * 2f) else 0f
     group(w / 2 - 505f * k, y, k) { balloonShip(t, tm) }
     // polvo al llegar
     if (t in 2f..3.2f) {
