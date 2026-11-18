@@ -62,6 +62,7 @@ fun Modifier.sceneLight(): Modifier = drawWithContent {
 @Composable
 fun Sparkles(color: Color = Color.White, count: Int = 14) {
     val time = rememberTime()
+    val star = remember { androidx.compose.ui.graphics.Path() }
     val pts = remember { List(count) { floatArrayOf(Random.nextFloat(), Random.nextFloat(), .6f + Random.nextFloat() * .8f, Random.nextFloat() * 6f, 3f + Random.nextFloat() * 3f) } }
     Canvas(Modifier.fillMaxSize()) {
         val t = time.value
@@ -73,9 +74,17 @@ fun Sparkles(color: Color = Color.White, count: Int = 14) {
             val cx = size.width * x
             val cy = size.height * y - u * 4 * p
             val r = u * 1.6f * s * (.5f + .5f * a)
-            drawCircle(color.copy(alpha = .25f * a), r * 1.6f, Offset(cx, cy))
-            drawLine(color.copy(alpha = a), Offset(cx - r, cy), Offset(cx + r, cy), u * .35f * s, StrokeCap.Round)
-            drawLine(color.copy(alpha = a), Offset(cx, cy - r), Offset(cx, cy + r), u * .35f * s, StrokeCap.Round)
+            drawCircle(color.copy(alpha = .22f * a), r * 1.3f, Offset(cx, cy))
+            // estrella de cuatro puntas con lados curvos
+            val k = r * .18f
+            star.reset()
+            star.moveTo(cx, cy - r)
+            star.quadraticBezierTo(cx + k, cy - k, cx + r, cy)
+            star.quadraticBezierTo(cx + k, cy + k, cx, cy + r)
+            star.quadraticBezierTo(cx - k, cy + k, cx - r, cy)
+            star.quadraticBezierTo(cx - k, cy - k, cx, cy - r)
+            star.close()
+            drawPath(star, color.copy(alpha = a))
         }
     }
 }

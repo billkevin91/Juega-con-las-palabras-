@@ -338,13 +338,13 @@ fun HostBar(g: Game) {
         Box(
             Modifier.fillMaxWidth().drawBehind {
                 val tail = Path().apply {
-                    moveTo(2.dp.toPx(), size.height * .62f)
-                    lineTo(-10.dp.toPx(), size.height * .78f)
-                    lineTo(2.dp.toPx(), size.height * .86f)
+                    moveTo(6.dp.toPx(), size.height * .45f)
+                    lineTo(-12.dp.toPx(), size.height * .66f)
+                    lineTo(6.dp.toPx(), size.height * .72f)
                     close()
                 }
-                drawPath(tail, Color(0xFF2B2270))
-                drawPath(tail, accent, style = androidx.compose.ui.graphics.drawscope.Stroke(2.dp.toPx()))
+                drawPath(tail, accent.copy(alpha = .7f), style = androidx.compose.ui.graphics.drawscope.Stroke(4.dp.toPx(), join = androidx.compose.ui.graphics.StrokeJoin.Round))
+                drawPath(tail, Color(0xFF2E2580))
             }
         ) {
             val shape = RoundedCornerShape(20.dp)
