@@ -14,17 +14,29 @@ guía a los niños por planetas donde practican tildes, ñ, diéresis y dictado.
 
 ## La voz
 
-La app usa la voz del teléfono y elige la mejor voz en español que encuentre (prefiere acento
-latinoamericano y "calidad alta"). En **Menú → Voz de Marty** se puede probar y elegir otra voz, cambiar
-la velocidad e instalar voces mejores. En la mayoría de teléfonos, las voces de Google
-("Speech Services by Google") son las que suenan más naturales.
+Marty, Borrón y el dictado usan **grabaciones con voz natural**, incluidas dentro de la app: suenan
+igual en cualquier teléfono, sin internet y sin configurar nada.
 
-### Voz humana grabada (opcional)
+- Las grabaciones están en `android/app/src/main/assets/voz/` (una por palabra, por ejemplo
+  `arbol.m4a`) y `assets/voz/f/` (las frases de Marty y Borrón).
+- Se generan con [Piper](https://github.com/rhasspy/piper), una voz neural libre (voz `es_MX-ald-medium`).
+  Marty suena un poco más agudo y alegre; Borrón, grave y con eco.
+- Todas las frases están en `Frases.kt`. Las que llevan una palabra se arman por partes
+  ("¡Muy bien!" + "árbol").
+- Si falta alguna grabación (por ejemplo, una frase nueva), la app usa la voz del teléfono para esa frase.
 
-Para que suene una persona de verdad, se pueden grabar las palabras y ponerlas en
-`android/app/src/main/assets/voz/`. El nombre del archivo es la palabra en minúsculas, sin tildes, y con
-la ñ escrita como `ny`: `arbol.mp3`, `pinguino.mp3`, `ninyo.mp3`, `montanya.mp3`. Se aceptan `.mp3`,
-`.ogg`, `.m4a` y `.wav`. Si una palabra tiene grabación, se usa la grabación; si no, la voz del teléfono.
+### Volver a generar la voz
+
+Al cambiar `Frases.kt` o `Words.kt`, la acción **Voz de Marty** de GitHub genera las grabaciones y las deja
+en la rama `voz-ci`; después se copian a `android/app/src/main/assets/voz/`. También se puede hacer en una
+computadora con internet:
+
+```
+cd android && ./gradlew testDebugUnitTest --tests '*FrasesTest*' && cd ..
+pip install piper-tts imageio-ffmpeg
+python3 tools/voz/generar.py voz-generada
+cp -r voz-generada/voz android/app/src/main/assets/
+```
 
 ## App Android nativa (`android/`)
 
