@@ -69,7 +69,7 @@ fun blink(t: Float, period: Float): Float {
     return if (p in .92f..1f) 1f - .9f * (1f - abs(p - .95f) / .03f).coerceIn(0f, 1f) else 1f
 }
 
-fun DrawScope.martyHead(t: Float, mood: Mood) {
+fun DrawScope.martyHead(t: Float, mood: Mood, talking: Boolean = false) {
     val a1 = lerp(-9f, 9f, swing(t, 1.1f))
     val a2 = lerp(-9f, 9f, swing(t, 1.1f, .5f))
     spin(a1, 40f, 24f) {
@@ -99,7 +99,12 @@ fun DrawScope.martyHead(t: Float, mood: Mood) {
     }
     circle(28f, 56f, 4f, Color(0xFFFF7FA8), alpha = .6f)
     circle(72f, 56f, 4f, Color(0xFFFF7FA8), alpha = .6f)
-    when (mood) {
+    // Al hablar, la boca se abre y se cierra unas siete veces por segundo.
+    val open = talking && ((t * 7f).toInt() % 2 == 0)
+    if (open && mood != Mood.HAPPY) {
+        path("M39 57Q50 72 61 57Q50 60 39 57Z", NAVY)
+        path("M44 64Q50 68 56 64Q50 62 44 64Z", BERRY)
+    } else when (mood) {
         Mood.NONE -> {
             path("M37 57Q50 71 63 57Q50 61 37 57Z", NAVY, NAVY, 2f)
             path("M41 59Q50 62 59 59L57.5 61.5Q50 64 42.5 61.5Z", Color.White)
@@ -120,7 +125,7 @@ fun DrawScope.martyMic(x: Float, y: Float, r: Float) = group(x, y, rot = r) {
     rect(-8f, -3f, 16f, 3f, 0f, YEL, Ink, 1.2f)
 }
 
-fun DrawScope.martyBust(t: Float, mood: Mood) {
+fun DrawScope.martyBust(t: Float, mood: Mood, talking: Boolean = false) {
     ellipse(50f, 97f, 30f, 4f, Color.Black, alpha = .2f)
     group(y = -2f * swing(t, .6f)) {
         path("M20 100Q20 78 50 74Q80 78 80 100Z", SUIT, Ink)
@@ -130,7 +135,7 @@ fun DrawScope.martyBust(t: Float, mood: Mood) {
         path("M50 81L40 76V86ZM50 81L60 76V86Z", BERRY, Ink, 2f)
         circle(50f, 81f, 2.6f, BERRY, Ink, 2f)
         circle(50f, 93f, 3f, Color(0xFF7DFFE3), Ink, 1.5f, alpha = lerp(.35f, 1f, swing(t, .5f)))
-        martyHead(t, mood)
+        martyHead(t, mood, talking)
         path("M75 97Q90 90 89 78", stroke = Ink, sw = 10f)
         path("M75 97Q90 90 89 78", stroke = SUIT, sw = 5.5f)
         martyMic(89f, 58f, 12f)
@@ -248,7 +253,7 @@ fun DrawScope.heroScene(t: Float, tm: TextMeasurer) = viewBox(640f, 360f) {
 
 /* ---------- Borrón, el saboteador ---------- */
 
-fun DrawScope.borron(t: Float, mood: Mood) {
+fun DrawScope.borron(t: Float, mood: Mood, talking: Boolean = false) {
     val p = (t / 2.8f) % 1f
     val sx: Float
     val sy: Float
@@ -274,7 +279,11 @@ fun DrawScope.borron(t: Float, mood: Mood) {
             group(y = if (mood == Mood.SAD) 4f else -1.5f * swing(t, 1.7f)) {
                 path("M27 32l17 7M73 32l-17 7", stroke = C.space, sw = 4f)
             }
-            when (mood) {
+            val open = talking && ((t * 6f).toInt() % 2 == 0)
+            if (open) {
+                path("M34 66q16 18 32 0z", C.space)
+                path("M43 74q7 5 14 0q-7-3-14 0z", BERRY)
+            } else when (mood) {
                 Mood.NONE -> path("M34 68q16 14 32 0q-16 5-32 0z", C.space)
                 Mood.HAPPY -> { path("M32 64q18 24 36 0z", C.space); path("M42 74q8 6 16 0q-8-4-16 0z", BERRY) }
                 Mood.SAD -> path("M36 74q14-10 28 0", stroke = C.space, sw = 3.5f)
@@ -306,6 +315,13 @@ fun HostBar(g: Game) {
         enter.animateTo(1f, tween(650))
     }
     val borron = g.who == Who.BORRON
+    val talking = g.speech.talking
+    // El globo da un pequeño rebote cada vez que cambia el mensaje.
+    val pop = remember { Animatable(1f) }
+    LaunchedEffect(g.text) {
+        pop.snapTo(.9f)
+        pop.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = .45f, stiffness = 500f))
+    }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
         Canvas(
             Modifier.size(84.dp).graphicsLayer {
@@ -331,12 +347,15 @@ fun HostBar(g: Game) {
                 scaleY = sc
             }
         ) {
-            group(s = size.width / 100f) { if (borron) borron(t, g.mood) else martyBust(t, g.mood) }
+            group(s = size.width / 100f) { if (borron) borron(t, g.mood, talking) else martyBust(t, g.mood, talking) }
         }
         // Globo de diálogo con colita apuntando al personaje
         val accent = if (borron) C.berry else C.sun
         Box(
-            Modifier.fillMaxWidth().drawBehind {
+            Modifier.fillMaxWidth().graphicsLayer {
+                scaleX = pop.value; scaleY = pop.value
+                transformOrigin = TransformOrigin(0f, .7f)
+            }.drawBehind {
                 val tail = Path().apply {
                     moveTo(6.dp.toPx(), size.height * .45f)
                     lineTo(-12.dp.toPx(), size.height * .66f)

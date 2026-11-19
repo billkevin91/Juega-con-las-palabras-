@@ -46,6 +46,31 @@ class FrasesTest {
     }
 
     @Test
+    fun nuncaRepiteLaMismaFraseDosVecesSeguidas() {
+        var antes = ""
+        repeat(200) {
+            val l = Frases.casi()
+            assertTrue("Se repitió: ${l.text}", l.text != antes)
+            antes = l.text
+        }
+        var felicita = ""
+        repeat(200) {
+            val l = Frases.acierto("sol")
+            assertTrue("Se repitió: ${l.text}", l.text != felicita)
+            felicita = l.text
+        }
+    }
+
+    @Test
+    fun laUltimaPreguntaTieneSuFrase() {
+        val s = Session("lee", Ctx(reto = false), WORDS.take(N), Level.NORMAL)
+        s.i = N - 1
+        assertEquals("¡La última es la más divertida!", Frases.siguiente(s).text)
+        s.i = 1
+        assertTrue(Frases.siguiente(s).text != "¡La última es la más divertida!")
+    }
+
+    @Test
     fun escribeLaListaDeGrabaciones() {
         val dir = File("build/voz").apply { mkdirs() }
         File(dir, "frases.tsv").writeText(

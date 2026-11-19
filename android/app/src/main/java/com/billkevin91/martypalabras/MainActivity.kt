@@ -22,6 +22,9 @@ import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.draw.drawWithContent
+import androidx.compose.ui.graphics.graphicsLayer
+import androidx.compose.animation.togetherWith
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
@@ -40,6 +43,7 @@ class MainActivity : ComponentActivity() {
             null, "home" -> Unit
             "attack" -> game.attack()
             "voz" -> game.voiceSettings()
+            "album" -> { WORDS.shuffled().take(40).forEach { game.save.addSticker(it.text) }; game.album() }
             "picker" -> game.picker()
             "intro" -> game.retoIntro(4)
             else -> if (PLANETS.any { it.key == demo }) game.play(demo, Ctx(reto = false))
@@ -48,6 +52,16 @@ class MainActivity : ComponentActivity() {
             BackHandler(enabled = game.screen != Screen.Home) { game.back() }
             App(game)
         }
+    }
+
+    override fun onResume() {
+        super.onResume()
+        Tilt.start(this)
+    }
+
+    override fun onPause() {
+        Tilt.stop()
+        super.onPause()
     }
 
     override fun onStop() {
@@ -73,8 +87,13 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.space(t: Float) {
         val k = lerp(.9f, 1.1f, swing(t, 9f, x))
         drawCircle(Brush.radialGradient(listOf(c.copy(alpha = .22f), Color.Transparent), Offset(w * x, h * y), w * .55f * k), w * .55f * k, Offset(w * x, h * y))
     }
+    // Paralaje: las estrellas grandes (cercanas) se mueven más que las pequeñas al inclinar el teléfono.
     STARS.forEach { (x, y, r, ph) ->
-        drawCircle(Color.White.copy(alpha = lerp(.25f, .95f, swing(t + ph, 1.8f))), r * density, Offset(w * x, h * y))
+        val depth = r * 9f * density
+        drawCircle(
+            Color.White.copy(alpha = lerp(.25f, .95f, swing(t + ph, 1.8f))), r * density,
+            Offset(w * x - Tilt.x * depth, h * y - Tilt.y * depth),
+        )
     }
     // estrella fugaz cada 7 segundos
     val p = (t % 7f) / .9f
@@ -110,12 +129,31 @@ fun App(g: Game) {
             }
         }
         Confetti(g.party, g.partyBig)
+        StickerToast(g.newSticker)
     }
 }
 
 @Composable
 private fun Screens(g: Game) {
-    when (val s = g.screen) {
+    // Transición entre pantallas: la nueva entra deslizándose y creciendo; la anterior se desvanece.
+    androidx.compose.animation.AnimatedContent(
+        targetState = g.screen,
+        transitionSpec = {
+            (androidx.compose.animation.fadeIn(androidx.compose.animation.core.tween(260, 60)) +
+                androidx.compose.animation.slideInVertically(androidx.compose.animation.core.tween(320)) { it / 10 } +
+                androidx.compose.animation.scaleIn(androidx.compose.animation.core.tween(320), initialScale = .96f)) togetherWith
+                androidx.compose.animation.fadeOut(androidx.compose.animation.core.tween(140))
+        },
+        label = "pantalla",
+    ) { s ->
+        // Algunas pantallas tienen varios bloques: van en columna para no superponerse durante la transición.
+        Column(verticalArrangement = Arrangement.spacedBy(if (s == Screen.Play) 10.dp else 16.dp)) { ScreenContent(g, s) }
+    }
+}
+
+@Composable
+private fun ScreenContent(g: Game, s: Screen) {
+    when (s) {
         Screen.Home -> HomeScreen(g)
         Screen.Picker -> PickerScreen(g)
         Screen.Name -> NameScreen(g)
@@ -124,6 +162,7 @@ private fun Screens(g: Game) {
         is Screen.End -> EndScreen(g, s)
         Screen.Diploma -> DiplomaScreen(g)
         Screen.Voice -> VoiceScreen(g)
+        Screen.Album -> AlbumScreen(g)
         Screen.Attack -> AttackScreen(g)
         is Screen.AttackEnd -> AttackEndScreen(g, s)
     }
@@ -149,7 +188,25 @@ private fun PlayScreen(g: Game) {
 fun Logo(text: String, size: Int) {
     val base = display(size)
     val d = androidx.compose.ui.platform.LocalDensity.current.density
-    Box {
+    val time = rememberTime()
+    // Un destello de luz recorre las letras cada 4 segundos.
+    Box(
+        Modifier.graphicsLayer(compositingStrategy = androidx.compose.ui.graphics.CompositingStrategy.Offscreen).drawWithContent {
+            drawContent()
+            val p = (time.value % 4f) / 1.2f
+            if (p < 1f) {
+                val sw = this.size.width
+                val x = lerp(-.3f, 1.3f, p) * sw
+                drawRect(
+                    Brush.linearGradient(
+                        listOf(Color.Transparent, Color.White.copy(alpha = .85f), Color.Transparent),
+                        Offset(x - sw * .15f, 0f), Offset(x + sw * .15f, this.size.height),
+                    ),
+                    blendMode = androidx.compose.ui.graphics.BlendMode.SrcAtop,
+                )
+            }
+        }
+    ) {
         Text(text, style = base.copy(color = Ink, drawStyle = androidx.compose.ui.graphics.drawscope.Stroke(width = size * .14f * d, join = androidx.compose.ui.graphics.StrokeJoin.Round)))
         Text(
             text,

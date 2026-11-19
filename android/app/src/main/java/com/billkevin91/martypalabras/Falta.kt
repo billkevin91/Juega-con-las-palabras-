@@ -105,7 +105,7 @@ fun FaltaGame(g: Game, s: Session) {
     val scope = rememberCoroutineScope()
     val tm = androidx.compose.ui.text.rememberTextMeasurer()
 
-    LaunchedEffect(Unit) { g.say(Frases.FALTA_INICIO) }
+    LaunchedEffect(Unit) { g.intro(s, Frases.FALTA_INICIO) }
 
     fun choose(i: Int) {
         if (s.locked || hopFrom >= 0) return

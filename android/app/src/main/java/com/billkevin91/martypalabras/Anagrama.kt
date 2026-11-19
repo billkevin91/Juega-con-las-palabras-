@@ -218,14 +218,14 @@ fun AnagramaGame(g: Game, s: Session) {
     val time = rememberTime()
     val scope = rememberCoroutineScope()
 
-    LaunchedEffect(Unit) { g.say(Frases.ANAGRAMA_INICIO) }
+    LaunchedEffect(Unit) { g.intro(s, Frases.ANAGRAMA_INICIO) }
 
     fun bunny(i: Int) {
         if (s.locked || used[i] == true || hops.containsKey(i)) return
         val c = order[i]
         if (c != word[pos]) {
-            g.wrong()
-            g.say(Frases.ANAGRAMA_NO_VA)
+            g.wrong(comment = false)
+            g.say(Frases.anagramaNoVa())
             nos[i] = time.value
             if (s.level == Level.FACIL) help = true
             return
@@ -236,7 +236,7 @@ fun AnagramaGame(g: Game, s: Session) {
         g.sfx(Sfx.BOING)
         hops[i] = time.value to slot
         val last = pos == n
-        if (last) g.win(!s.tried) else g.say(Frases.ANAGRAMA_SALTA)
+        if (last) g.win(!s.tried) else g.say(Frases.anagramaSalta())
         scope.launch {
             delay(600)
             used[i] = true

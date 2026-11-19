@@ -174,6 +174,12 @@ class Speech(context: Context, private val save: Save) {
     }
 
     private fun setup() {
+        tts.setOnUtteranceProgressListener(object : android.speech.tts.UtteranceProgressListener() {
+            override fun onStart(utteranceId: String?) { talking = true }
+            override fun onDone(utteranceId: String?) { talking = false }
+            @Deprecated("Deprecated in Java")
+            override fun onError(utteranceId: String?) { talking = false }
+        })
         val spanish = try {
             tts.voices.orEmpty().filter {
                 it.locale.language == "es" && TextToSpeech.Engine.KEY_FEATURE_NOT_INSTALLED !in it.features
@@ -287,10 +293,15 @@ class Speech(context: Context, private val save: Save) {
         playNext()
     }
 
+    /** true mientras suena una frase o palabra: Marty y Borrón mueven la boca. */
+    var talking by mutableStateOf(false)
+        private set
+
     private fun playNext() {
         val file = chain.removeFirstOrNull()
         if (file == null) {
             player = null
+            talking = false
             pendingWord?.let { pendingWord = null; speak(it, flush = true) }
             return
         }
@@ -306,6 +317,7 @@ class Speech(context: Context, private val save: Save) {
                 prepare()
                 start()
             }
+            talking = true
         } catch (_: Exception) {
             playNext()
         }
@@ -376,6 +388,7 @@ class Speech(context: Context, private val save: Save) {
     }
 
     fun stop() {
+        talking = false
         pendingWord = null
         stopPlayer()
         if (ready) tts.stop()

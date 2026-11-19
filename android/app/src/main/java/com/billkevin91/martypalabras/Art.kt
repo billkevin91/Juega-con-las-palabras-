@@ -38,7 +38,7 @@ import kotlin.random.Random
 /** Contenedor de escena con proporción fija, esquinas redondeadas y borde. */
 fun Modifier.scene(ratio: Float, border: Color = Color(0xFF44399A), radius: Dp = 22.dp, width: Dp = 2.dp): Modifier {
     val shape = RoundedCornerShape(radius)
-    return fillMaxWidth().aspectRatio(ratio).shadow(10.dp, shape, ambientColor = Color(0xFF7A5AE0), spotColor = Color(0xFF7A5AE0))
+    return fillMaxWidth().aspectRatio(ratio).tilt3d().shadow(10.dp, shape, ambientColor = Color(0xFF7A5AE0), spotColor = Color(0xFF7A5AE0))
         .clip(shape).sceneLight().border(width, border, shape)
 }
 
@@ -108,7 +108,7 @@ fun SceneBox(
         val H = W / (if (isTall) tall else wide)
         val shape = RoundedCornerShape(22.dp)
         Box(
-            Modifier.size(W, H).shadow(10.dp, shape, ambientColor = Color(0xFF7A5AE0), spotColor = Color(0xFF7A5AE0))
+            Modifier.size(W, H).tilt3d().shadow(10.dp, shape, ambientColor = Color(0xFF7A5AE0), spotColor = Color(0xFF7A5AE0))
                 .clip(shape).background(bg).sceneLight().border(borderWidth, border, shape)
         ) {
             content(W, H, isTall)

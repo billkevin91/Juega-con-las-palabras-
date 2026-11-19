@@ -34,6 +34,7 @@ sealed interface Screen {
     data class End(val k: String, val ctx: Ctx, val ok: Int, val stars: Int, val pass: Boolean) : Screen
     data object Diploma : Screen
     data object Voice : Screen
+    data object Album : Screen
     data object Attack : Screen
     data class AttackEnd(val score: Int, val ok: Int, val record: Boolean) : Screen
 }
@@ -64,6 +65,17 @@ class Save(context: Context) {
     var hostVoice: Boolean
         get() = p.getBoolean("hostVoice", true)
         set(v) = p.edit().putBoolean("hostVoice", v).apply()
+
+    /** Stickers del álbum: las palabras que el jugador ya acertó alguna vez. */
+    val stickers: Set<String> get() = p.getStringSet("stickers", emptySet()) ?: emptySet()
+
+    /** Pega un sticker; devuelve true si es nuevo. */
+    fun addSticker(word: String): Boolean {
+        val now = stickers
+        if (word in now) return false
+        p.edit().putStringSet("stickers", now + word).apply()
+        return true
+    }
 
     fun best(k: String) = p.getInt("best_$k", 0)
     fun setBest(k: String, v: Int) = p.edit().putInt("best_$k", v).apply()
@@ -116,12 +128,28 @@ class Game(context: Context) {
 
     val canSpeak: Boolean get() = speech.ready
 
-    /** Muestra la frase en el globo y la dice en voz alta (grabada, o con la voz del teléfono). */
+    private val spokenAt = HashMap<String, Long>()
+
+    /**
+     * Muestra la frase en el globo y la dice en voz alta (grabada, o con la voz del teléfono).
+     * Las frases de un mismo tipo no se repiten en voz alta en menos de 3,5 segundos, y las que son
+     * solo para el globo (comentarios de cada letra) no se dicen: así Marty no habla sin parar.
+     */
     fun say(l: Line) {
         text = l.text
         who = l.who
+        if (!l.voice) return
+        val k = l.kind
+        val now = android.os.SystemClock.uptimeMillis()
+        if (k != null) {
+            if (now - (spokenAt[k] ?: 0L) < 3500L) return
+            spokenAt[k] = now
+        }
         speech.speakLine(l)
     }
+
+    /** Instrucciones del planeta solo en la primera pregunta; después, una frase corta de ánimo. */
+    fun intro(s: Session, l: Line) = say(if (s.i == 0) l else Frases.siguiente(s))
 
     fun react(m: Mood) {
         mood = m
@@ -202,6 +230,20 @@ class Game(context: Context) {
 
     fun runStars(k: String) = run[k] ?: save.best(k)
 
+    fun album() {
+        session = null
+        speech.stop()
+        title = "Álbum de stickers"
+        react(Mood.HAPPY)
+        val n = save.stickers.size
+        say(Frases.album(n, WORDS.size))
+        screen = Screen.Album
+    }
+
+    /** Sticker recién conseguido: se muestra un aviso unos segundos. */
+    var newSticker by mutableStateOf<Word?>(null)
+        private set
+
     fun voiceSettings() {
         session = null
         title = "Voz de Marty"
@@ -230,13 +272,14 @@ class Game(context: Context) {
         if (session?.ctx?.reto == true) home() else picker()
     }
 
-    fun wrong() {
+    /** Error: sonido, vibración y cara triste. [comment] = false si el juego dirá algo más preciso. */
+    fun wrong(comment: Boolean = true) {
         val s = session ?: return
         s.tried = true
         tone(200, 150)
         haptics.wrong()
         react(Mood.SAD)
-        say(Frases.CASI)
+        if (comment) say(Frases.casi())
     }
 
     fun win(credit: Boolean, quiet: Boolean = false) {
@@ -244,6 +287,14 @@ class Game(context: Context) {
         if (s.locked) return
         s.locked = true
         if (credit) s.ok++
+        if (credit && save.addSticker(s.word.text)) {
+            val w = s.word
+            newSticker = w
+            scope.launch {
+                delay(2200)
+                if (newSticker === w) newSticker = null
+            }
+        }
         react(Mood.HAPPY)
         tone(523, 659, 784)
         haptics.right()

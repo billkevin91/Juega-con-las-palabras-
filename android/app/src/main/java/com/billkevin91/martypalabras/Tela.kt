@@ -218,7 +218,7 @@ fun TelaGame(g: Game, s: Session) {
     var pressedAt by remember { mutableFloatStateOf(-9f) }
 
     LaunchedEffect(Unit) {
-        g.say(if (sp) Frases.TELA_INICIO else Frases.TELA_SIN_VOZ)
+        g.intro(s, if (sp) Frases.TELA_INICIO else Frases.TELA_SIN_VOZ)
         if (sp) {
             delay(400)
             if (!s.locked) g.speak(w, flush = false)
@@ -244,7 +244,7 @@ fun TelaGame(g: Game, s: Session) {
             when {
                 norm(v) == norm(w) -> Frases.TELA_TILDES
                 v.length != w.length -> Frases.telaLetras(w.length)
-                else -> Frases.TELA_OTRA_VEZ
+                else -> Frases.telaOtraVez()
             }
         )
     }

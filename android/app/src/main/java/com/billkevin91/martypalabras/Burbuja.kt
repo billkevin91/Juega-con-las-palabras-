@@ -90,16 +90,16 @@ fun BurbujaGame(g: Game, s: Session) {
             if (pos >= word.size) {
                 won = true
                 g.win(!s.tried)
-            } else g.say(Frases.BURBUJA_ESA_ES)
+            } else g.say(Frases.burbujaEsaEs())
         } else {
             b.state = 2
-            g.wrong()
-            g.say(if (norm(b.c) == norm(need)) Frases.BURBUJA_TILDE else Frases.BURBUJA_NO_ES)
+            g.wrong(comment = false)
+            g.say(if (norm(b.c) == norm(need)) Frases.BURBUJA_TILDE else Frases.burbujaNoEs())
         }
     }
 
     LaunchedEffect(Unit) {
-        g.say(if (sp) Frases.BURBUJA_INICIO else Frases.BURBUJA_SIN_VOZ)
+        g.intro(s, if (sp) Frases.BURBUJA_INICIO else Frases.BURBUJA_SIN_VOZ)
         repeat(6) { spawn((it + Random.nextFloat()) / 6f) }
         if (sp) {
             delay(400)

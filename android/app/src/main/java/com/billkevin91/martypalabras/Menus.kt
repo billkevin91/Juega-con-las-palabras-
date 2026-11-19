@@ -44,8 +44,8 @@ import java.util.Date
 import java.util.Locale
 
 @Composable
-fun ModeButton(planetArt: @Composable () -> Unit, title: String, desc: String, onClick: () -> Unit) {
-    CandyBox(Color(0xFF3A2E92), 22.dp, Modifier.fillMaxWidth(), depth = 6.dp, padding = PaddingValues(horizontal = 16.dp, vertical = 12.dp), onClick = onClick) {
+fun ModeButton(planetArt: @Composable () -> Unit, title: String, desc: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
+    CandyBox(Color(0xFF3A2E92), 22.dp, modifier.fillMaxWidth(), depth = 6.dp, padding = PaddingValues(horizontal = 16.dp, vertical = 12.dp), onClick = onClick) {
         Row(
             Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -71,23 +71,26 @@ fun HomeScreen(g: Game) {
             Canvas(Modifier.fillMaxSize()) { heroScene(t, tm) }
             Sparkles(Color(0xFFFFF3B0))
         }
-        LevelPicker(g)
+        LevelPicker(g, Modifier.popIn(1))
         ModeButton({ PlanetBall(Color(0xFFFFE07A), Color(0xFFE08A00), true, 56.dp) },
-            "Desafío Galáctico", "Visita los ${RETO.size} planetas, gana medallas y un diploma. Superados: $done de ${RETO.size}") { g.retoStart() }
+            "Desafío Galáctico", "Visita los ${RETO.size} planetas, gana medallas y un diploma. Superados: $done de ${RETO.size}", Modifier.popIn(2)) { g.retoStart() }
         ModeButton({ PlanetBall(Color(0xFF8FDCFF), Color(0xFF2478C8), false, 56.dp) },
-            "Astroaventura", "Visita libre: elige el planeta que quieras") { g.picker() }
+            "Astroaventura", "Visita libre: elige el planeta que quieras", Modifier.popIn(3)) { g.picker() }
         ModeButton({ PlanetBall(Color(0xFF6B57D6), Color(0xFF2A1F78), false, 56.dp) },
-            "Ataque de las palabras", "Borrón quiere ensuciar el texto. ¡Detenlo en ${attackSeconds(g.level)} segundos! Récord: ${g.save.attack} puntos") { g.attack() }
-        Buttons { Ghost("Voz de Marty", icon = { SpeakerIcon() }) { g.voiceSettings() } }
+            "Ataque de las palabras", "Borrón quiere ensuciar el texto. ¡Detenlo en ${attackSeconds(g.level)} segundos! Récord: ${g.save.attack} puntos", Modifier.popIn(4)) { g.attack() }
+        Buttons {
+            Ghost("Álbum ${g.save.stickers.size}/${WORDS.size}") { g.album() }
+            Ghost("Voz de Marty", icon = { SpeakerIcon() }) { g.voiceSettings() }
+        }
     }
 }
 
 /** Tres botones para elegir la dificultad, con estrellas (1, 2 o 3). */
 @Composable
-fun LevelPicker(g: Game) {
+fun LevelPicker(g: Game, modifier: Modifier = Modifier) {
     val shape = RoundedCornerShape(22.dp)
     Column(
-        Modifier.fillMaxWidth().panel(shape).padding(12.dp),
+        modifier.fillMaxWidth().panel(shape).padding(12.dp),
         verticalArrangement = Arrangement.spacedBy(8.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
     ) {
@@ -117,13 +120,13 @@ fun LevelPicker(g: Game) {
 
 @Composable
 fun PickerScreen(g: Game) {
-    LevelPicker(g)
+    LevelPicker(g, Modifier.popIn(0))
     GameCard {
-        PLANETS.chunked(2).forEach { row ->
+        PLANETS.chunked(2).forEachIndexed { ri, row ->
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
-                row.forEach { p ->
+                row.forEachIndexed { ci, p ->
                     CandyBox(
-                        Color(0xFF3A2E92), 22.dp, Modifier.weight(1f), depth = 6.dp,
+                        Color(0xFF3A2E92), 22.dp, Modifier.weight(1f).popIn(1 + ri * 2 + ci), depth = 6.dp,
                         padding = PaddingValues(horizontal = 10.dp, vertical = 12.dp), onClick = { g.play(p.key, Ctx(reto = false)) },
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {

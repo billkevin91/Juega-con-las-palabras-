@@ -47,14 +47,6 @@ fun Modifier.shake(key: Int): Modifier {
     return graphicsLayer { rotationZ = -8f * sin(2f * PI.toFloat() * a.value) }
 }
 
-@Composable
-fun PicCircle(text: String) {
-    Box(
-        Modifier.size(132.dp).clip(CircleShape).background(C.space2).border(4.dp, C.sun, CircleShape),
-        contentAlignment = Alignment.Center,
-    ) { Text(text, style = TextStyle(fontSize = 70.sp, color = C.muted, fontFamily = Baloo)) }
-}
-
 @OptIn(ExperimentalLayoutApi::class)
 @Composable
 fun CenterFlow(content: @Composable () -> Unit) {
