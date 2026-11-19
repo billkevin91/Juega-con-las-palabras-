@@ -91,6 +91,18 @@ object Frases {
     private val LLEGADA = PLANETS.associate { p -> p.key to marty("Llegamos a ${p.name}. ${INTRO[p.key] ?: p.desc}") }
     fun llegada(k: String) = LLEGADA.getValue(k)
 
+    /* ---------- Escenas animadas ---------- */
+    val CINE_INTRO_1 = marty("¡Atención, atención! Desde el otro lado de la galaxia...")
+    val CINE_INTRO_2 = marty("¡Llega el concurso más divertido del universo!")
+    val CINE_INTRO_3 = marty("¡Soy Marty! ¡Y hoy vamos a jugar con las palabras!")
+    private val RUMBO = PLANETS.associate { p -> p.key to marty("¡Rumbo a ${p.name}! ¡Agárrate fuerte!") }
+    fun rumbo(k: String) = RUMBO.getValue(k)
+    val CINE_BORRON_LLEGA = borron("¡Jajaja! ¡Sorpresa! ¡Vengo a manchar todas las palabras!")
+    val CINE_HUYE_1 = marty("¡Alto ahí, Borrón! ¡Deja en paz las palabras!")
+    val CINE_HUYE_2 = borron("¡Aaay! ¡Un borrador gigante! ¡Me voy, me voy!")
+    val CINE_HUYE_3 = marty("¡Gracias a ti, las palabras están limpias otra vez!")
+    val CINE_FINAL = marty("¡Increíble! ¡Superaste los seis planetas! ¡Aquí está tu diploma!")
+
     private val DIPLOMA = reg("¡Lo lograste! Superaste los ${RETO.size} planetas.")
     fun diploma(nombre: String) = Line("¡Lo lograste, $nombre! Superaste los ${RETO.size} planetas.", Who.MARTY, listOf(DIPLOMA))
 

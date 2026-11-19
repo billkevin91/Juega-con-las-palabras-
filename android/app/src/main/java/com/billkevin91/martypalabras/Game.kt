@@ -35,6 +35,7 @@ sealed interface Screen {
     data object Diploma : Screen
     data object Voice : Screen
     data object Album : Screen
+    data class Cine(val kind: Escena, val arg: String = "") : Screen
     data object Attack : Screen
     data class AttackEnd(val score: Int, val ok: Int, val record: Boolean) : Screen
 }
@@ -92,6 +93,11 @@ class Save(context: Context) {
         p.edit().putLong("lastDay", d).putInt("streak", s).apply()
         return true
     }
+
+    /** Ya vio la escena de introducción (se muestra sola solo la primera vez). */
+    var introSeen: Boolean
+        get() = p.getBoolean("introSeen", false)
+        set(v) = p.edit().putBoolean("introSeen", v).apply()
 
     fun best(k: String) = p.getInt("best_$k", 0)
     fun setBest(k: String, v: Int) = p.edit().putInt("best_$k", v).apply()
@@ -188,6 +194,7 @@ class Game(context: Context) {
 
     fun home() {
         session = null
+        cineThen = null
         speech.stop()
         title = "Marty y las Palabras"
         react(Mood.NONE)
@@ -250,6 +257,31 @@ class Game(context: Context) {
         react(Mood.HAPPY)
         celebrate(true)
         screen = Screen.End("anagrama", Ctx(reto = false), N, 3, true)
+    }
+
+    /* ---------- Escenas animadas ---------- */
+
+    private var cineThen: (() -> Unit)? = null
+
+    /** Muestra una escena animada y, al terminar (o al tocar "Saltar"), hace [then]. */
+    fun cine(kind: Escena, title: String, arg: String = "", then: () -> Unit) {
+        session = null
+        speech.stop()
+        this.title = title
+        cineThen = then
+        screen = Screen.Cine(kind, arg)
+    }
+
+    fun cineDone() {
+        val then = cineThen ?: return
+        cineThen = null
+        speech.stop()
+        then()
+    }
+
+    fun intro() {
+        save.introSeen = true
+        cine(Escena.INTRO, "Marty y las Palabras") { home() }
     }
 
     fun runStars(k: String) = run[k] ?: save.best(k)
@@ -371,7 +403,8 @@ class Game(context: Context) {
 
     fun endNext(e: Screen.End) {
         when {
-            e.ctx.reto && e.pass -> if (e.ctx.pi >= RETO.size - 1) diploma() else retoIntro(e.ctx.pi + 1)
+            e.ctx.reto && e.pass -> if (e.ctx.pi >= RETO.size - 1) cine(Escena.FINAL, "¡Campeón galáctico!") { diploma() }
+            else cine(Escena.VIAJE, "Viajando...", RETO[e.ctx.pi + 1]) { retoIntro(e.ctx.pi + 1) }
             e.ctx.reto -> retoIntro(e.ctx.pi)
             else -> play(e.k, e.ctx)
         }
@@ -379,11 +412,13 @@ class Game(context: Context) {
 
     /* ---------- Ataque de las palabras ---------- */
 
-    fun attack() {
+    /** Antes del ataque, Borrón aparece en una escena animada. */
+    fun attack() = cine(Escena.BORRON_LLEGA, "¡Alerta de tinta!") { attackStart() }
+
+    private fun attackStart() {
         session = null
         title = "Ataque de las palabras"
         react(Mood.NONE)
-        say(Frases.ATAQUE_INICIO)
         screen = Screen.Attack
     }
 
@@ -396,7 +431,10 @@ class Game(context: Context) {
             tone(523, 659, 784)
             celebrate(true)
         } else tone(300, 260)
-        say(if (ok >= 7) Frases.ATAQUE_GANASTE else Frases.ATAQUE_PERDISTE)
-        screen = Screen.AttackEnd(score, ok, rec)
+        val end = Screen.AttackEnd(score, ok, rec)
+        // Si ganaste, Marty sale a perseguir a Borrón con un borrador gigante.
+        if (ok >= 7) return cine(Escena.BORRON_HUYE, "¡Fuera, Borrón!") { title = "Ataque de las palabras"; screen = end }
+        say(Frases.ATAQUE_PERDISTE)
+        screen = end
     }
 }

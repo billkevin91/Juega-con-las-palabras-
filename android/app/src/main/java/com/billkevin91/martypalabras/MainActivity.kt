@@ -40,7 +40,13 @@ class MainActivity : ComponentActivity() {
         game.home()
         // Para las pruebas automáticas: abrir directamente un planeta ("--es demo pantano").
         when (val demo = intent?.getStringExtra("demo")) {
-            null, "home" -> Unit
+            null -> if (!game.save.introSeen) game.intro()
+            "home" -> Unit
+            "cine_intro" -> game.intro()
+            "cine_viaje" -> game.cine(Escena.VIAJE, "Viajando...", "tela") { game.home() }
+            "cine_borron" -> game.cine(Escena.BORRON_LLEGA, "¡Alerta de tinta!") { game.home() }
+            "cine_huye" -> game.cine(Escena.BORRON_HUYE, "¡Fuera, Borrón!") { game.home() }
+            "cine_final" -> game.cine(Escena.FINAL, "¡Campeón galáctico!") { game.home() }
             "attack" -> game.attack()
             "voz" -> game.voiceSettings()
             "album" -> { WORDS.shuffled().take(40).forEach { game.save.addSticker(it.text) }; game.album() }
@@ -164,6 +170,7 @@ private fun ScreenContent(g: Game, s: Screen) {
         Screen.Diploma -> DiplomaScreen(g)
         Screen.Voice -> VoiceScreen(g)
         Screen.Album -> AlbumScreen(g)
+        is Screen.Cine -> CineScreen(g, s)
         Screen.Attack -> AttackScreen(g)
         is Screen.AttackEnd -> AttackEndScreen(g, s)
     }

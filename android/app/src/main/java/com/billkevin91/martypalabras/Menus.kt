@@ -84,6 +84,7 @@ fun HomeScreen(g: Game) {
             "Ataque de las palabras", "Borrón quiere ensuciar el texto. ¡Detenlo en ${attackSeconds(g.level)} segundos! Récord: ${g.save.attack} puntos", Modifier.popIn(4)) { g.attack() }
         Buttons {
             Ghost("Álbum ${g.save.stickers.size}/${WORDS.size}") { g.album() }
+            Ghost("Ver intro") { g.intro() }
             Ghost("Voz de Marty", icon = { SpeakerIcon() }) { g.voiceSettings() }
         }
     }

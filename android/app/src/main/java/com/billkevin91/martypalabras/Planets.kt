@@ -11,6 +11,7 @@ import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.Path
 import androidx.compose.ui.graphics.drawscope.DrawScope
+import androidx.compose.ui.graphics.drawscope.inset
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.clipPath
 import androidx.compose.ui.graphics.drawscope.clipRect
@@ -184,7 +185,7 @@ fun GalaxyRoute(g: Game, current: Int) {
             val c = pts[i]
             val rad = h * (if (i == current) .36f + .03f * sin(t * 4f) else .27f)
             if (i == current) drawCircle(Brush.radialGradient(listOf(C.sun.copy(alpha = .55f), Color.Transparent), c, rad * 1.8f), rad * 1.8f, c)
-            androidx.compose.ui.graphics.drawscope.inset(c.x - rad, c.y - rad, size.width - c.x - rad, size.height - c.y - rad) {
+            inset(c.x - rad, c.y - rad, size.width - c.x - rad, size.height - c.y - rad) {
                 planetBall(p.a, p.b, p.ring, p.key, t)
             }
             if (i > current) drawCircle(Color(0xAA150F3A), rad * .85f, c)
