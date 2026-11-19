@@ -62,19 +62,19 @@ import androidx.compose.ui.unit.sp
 /* Colores y tipografías del concurso espacial, y piezas de interfaz comunes. */
 
 object C {
-    val space = Color(0xFF150F3A)
-    val space2 = Color(0xFF241B5E)
-    val card = Color(0xFF2B2270)
-    val ink = Color(0xFFF6F1FF)
-    val muted = Color(0xFFB9B0EC)
-    val line = Color(0xFF44399A)
-    val sun = Color(0xFFFFC93C)
-    val berry = Color(0xFFFF6B8B)
-    val sky = Color(0xFF4CC3FF)
-    val leaf = Color(0xFF5ED38B)
+    val space = Color(0xFF141C2E)
+    val space2 = Color(0xFF223049)
+    val card = Color(0xFF2A3854)
+    val ink = Color(0xFFFBF6EC)
+    val muted = Color(0xFFB9C3D6)
+    val line = Color(0xFF4B5D7E)
+    val sun = Color(0xFFF7C548)
+    val berry = Color(0xFFEF6F6C)
+    val sky = Color(0xFF5BB8E6)
+    val leaf = Color(0xFF6CC28B)
     val grape = Color(0xFFA98BFF)
     val orange = Color(0xFFFF9F4A)
-    val onColor = Color(0xFF1B1448)
+    val onColor = Color(0xFF1E2233)
     val bad = Color(0xFFFF8087)
     val paper = Color(0xFFFFF4CF)
     val paperInk = Color(0xFF4A3200)
@@ -155,7 +155,7 @@ fun GameCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() 
 @Composable
 fun Ghost(text: String, primary: Boolean = false, icon: (@Composable () -> Unit)? = null, onClick: () -> Unit) {
     CandyBox(
-        if (primary) C.berry else Color(0xFF4A3BA8), 50.dp, padding = PaddingValues(horizontal = 18.dp, vertical = 10.dp), onClick = onClick,
+        if (primary) C.berry else Color(0xFF3E5479), 50.dp, padding = PaddingValues(horizontal = 18.dp, vertical = 10.dp), onClick = onClick,
     ) {
         Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(8.dp)) {
             if (icon != null) icon()
@@ -185,7 +185,7 @@ fun StarsRow(n: Int, size: Dp) {
                     if (i < n) {
                         path(STAR, Color(0xFFFFD84A), Color(0xFFB87A00), 1.4f)
                         path("M8.6 7.6l2.4-4", stroke = Color.White, sw = 1.3f, alpha = .8f)
-                    } else path(STAR, Color(0xFF2E2470), C.line, 1.2f)
+                    } else path(STAR, Color(0xFF2B3A57), C.line, 1.2f)
                 }
             }
         }

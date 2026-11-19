@@ -119,7 +119,7 @@ fun AnimatedStars(n: Int, size: Dp, onStar: (Int) -> Unit = {}) {
                         circle(12f, 12f, 13f, Color(0xFFFFE36A), alpha = .25f)
                         path(STAR, Color(0xFFFFD84A), Color(0xFFB87A00), 1.4f)
                         path("M8.6 7.6l2.4-4", stroke = Color.White, sw = 1.3f, alpha = .8f)
-                    } else path(STAR, Color(0xFF2E2470), C.line, 1.2f)
+                    } else path(STAR, Color(0xFF2B3A57), C.line, 1.2f)
                 }
             }
         }

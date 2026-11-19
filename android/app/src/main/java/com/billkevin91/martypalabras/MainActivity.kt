@@ -111,6 +111,8 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.space(t: Float) {
             drawPath(star, Color(0xFFFFF3B0), alpha = a)
         } else drawCircle(Color.White.copy(alpha = a), r * density, o)
     }
+    // Grano de papel sobre todo el fondo.
+    drawRect(PaperGrain, alpha = .7f)
     // estrella fugaz cada 7 segundos
     val p = (t % 7f) / .9f
     if (p < 1f) {

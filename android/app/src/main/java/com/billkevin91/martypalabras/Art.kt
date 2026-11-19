@@ -55,7 +55,9 @@ fun Modifier.hardShadow(radius: Dp, offset: Dp = 5.dp): Modifier = drawBehind {
  */
 fun Modifier.sceneLight(): Modifier = drawWithContent {
     drawContent()
-    // Estilo caricatura: solo un filo blanco por dentro del borde, como el brillo de una viñeta impresa.
+    // Grano de papel encima de toda la escena, como una ilustración impresa.
+    drawRect(PaperGrain)
+    // Solo un filo blanco por dentro del borde, como el brillo de una viñeta impresa.
     val g = 4.dp.toPx()
     drawRoundRect(
         Color.White.copy(alpha = .18f), Offset(g, g), androidx.compose.ui.geometry.Size(size.width - g * 2, size.height - g * 2),
@@ -68,7 +70,7 @@ fun Modifier.sceneLight(): Modifier = drawWithContent {
 fun Sparkles(color: Color = Color.White, count: Int = 14) {
     val time = rememberTime()
     val star = remember { androidx.compose.ui.graphics.Path() }
-    val pts = remember { List(count) { floatArrayOf(Random.nextFloat(), Random.nextFloat(), .6f + Random.nextFloat() * .8f, Random.nextFloat() * 6f, 3f + Random.nextFloat() * 3f) } }
+    val pts = remember { List(minOf(count, 5)) { floatArrayOf(Random.nextFloat(), Random.nextFloat(), .6f + Random.nextFloat() * .8f, Random.nextFloat() * 6f, 3f + Random.nextFloat() * 3f) } }
     Canvas(Modifier.fillMaxSize()) {
         val t = time.value
         val u = size.width / 100f
@@ -89,8 +91,7 @@ fun Sparkles(color: Color = Color.White, count: Int = 14) {
             star.quadraticBezierTo(cx - k, cy - k, cx, cy - r)
             star.close()
             // Estrella de caricatura: color plano y contorno oscuro; aparece "saltando" (crece y se encoge).
-            drawPath(star, Color(0xFFFFE36A).copy(alpha = a))
-            drawPath(star, Ink.copy(alpha = a), style = Stroke(u * .45f, join = androidx.compose.ui.graphics.StrokeJoin.Round))
+            drawPath(star, color.copy(alpha = a * .7f))
         }
     }
 }

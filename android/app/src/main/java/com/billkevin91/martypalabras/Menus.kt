@@ -48,7 +48,7 @@ import kotlin.math.PI
 
 @Composable
 fun ModeButton(planetArt: @Composable () -> Unit, title: String, desc: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
-    CandyBox(Color(0xFF3A2E92), 22.dp, modifier.fillMaxWidth(), depth = 6.dp, padding = PaddingValues(horizontal = 16.dp, vertical = 12.dp), onClick = onClick) {
+    CandyBox(Color(0xFF34476A), 22.dp, modifier.fillMaxWidth(), depth = 6.dp, padding = PaddingValues(horizontal = 16.dp, vertical = 12.dp), onClick = onClick) {
         Row(
             Modifier.fillMaxWidth(),
             verticalAlignment = Alignment.CenterVertically,
@@ -57,7 +57,7 @@ fun ModeButton(planetArt: @Composable () -> Unit, title: String, desc: String, m
             planetArt()
             Column(Modifier.weight(1f)) {
                 Text(title, style = display(21).copy(shadow = Shadow(Color(0x88000000), Offset(0f, 2f), 3f)))
-                Text(desc, style = body(15, Color(0xFFD4CCFF)))
+                Text(desc, style = body(15, Color(0xFFD3DCEA)))
             }
             Text("›", style = display(34, C.sun))
         }
@@ -132,7 +132,7 @@ fun LevelPicker(g: Game, modifier: Modifier = Modifier) {
                 val on = g.level == l
                 val col = listOf(C.leaf, C.sun, C.berry)[i]
                 CandyBox(
-                    if (on) col else Color(0xFF3F3299), 16.dp, Modifier.weight(1f).border(3.dp, if (on) Color.White else Color.Transparent, RoundedCornerShape(16.dp)),
+                    if (on) col else Color(0xFF374A6E), 16.dp, Modifier.weight(1f).border(3.dp, if (on) Color.White else Color.Transparent, RoundedCornerShape(16.dp)),
                     padding = PaddingValues(vertical = 6.dp), onClick = { g.changeLevel(l) },
                 ) {
                     Column(horizontalAlignment = Alignment.CenterHorizontally) {
@@ -158,13 +158,13 @@ fun PickerScreen(g: Game) {
             Row(Modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(12.dp)) {
                 row.forEachIndexed { ci, p ->
                     CandyBox(
-                        Color(0xFF3A2E92), 22.dp, Modifier.weight(1f).popIn(1 + ri * 2 + ci), depth = 6.dp,
+                        Color(0xFF34476A), 22.dp, Modifier.weight(1f).popIn(1 + ri * 2 + ci), depth = 6.dp,
                         padding = PaddingValues(horizontal = 10.dp, vertical = 12.dp), onClick = { g.play(p.key, Ctx(reto = false)) },
                     ) {
                         Column(horizontalAlignment = Alignment.CenterHorizontally, verticalArrangement = Arrangement.spacedBy(6.dp)) {
                             PlanetBall(p, 76.dp)
                             Text(p.name, style = display(21).copy(shadow = Shadow(Color(0x88000000), Offset(0f, 2f), 3f)), textAlign = TextAlign.Center)
-                            Text(p.desc, style = body(14, Color(0xFFD4CCFF)), textAlign = TextAlign.Center)
+                            Text(p.desc, style = body(14, Color(0xFFD3DCEA)), textAlign = TextAlign.Center)
                             StarsRow(g.save.best(p.key), 20.dp)
                         }
                     }
@@ -357,7 +357,7 @@ fun VoiceScreen(g: Game) {
                 Text("Marty habla", style = display(19))
                 Text("Marty y Borrón leen en voz alta lo que dicen", style = body(14, C.muted))
             }
-            CandyBox(if (sp.hostOn) C.leaf else Color(0xFF4A3BA8), 50.dp, padding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), onClick = {
+            CandyBox(if (sp.hostOn) C.leaf else Color(0xFF3E5479), 50.dp, padding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), onClick = {
                 sp.setHost(!sp.hostOn)
                 if (sp.hostOn) g.say(Frases.SOY_MARTY)
             }) { Text(if (sp.hostOn) "Sí" else "No", style = display(18, if (sp.hostOn) C.onColor else C.ink)) }

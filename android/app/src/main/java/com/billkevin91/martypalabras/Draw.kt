@@ -20,6 +20,8 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.lerp as colorLerp
+import androidx.compose.ui.graphics.asComposePathEffect
+import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.text.TextMeasurer
 import androidx.compose.ui.text.TextStyle
@@ -32,7 +34,7 @@ import kotlin.math.sin
 
 /* Ayudas de dibujo: permiten usar trazos con la misma sintaxis que SVG (M, Q, C, A…) en un Canvas. */
 
-val Ink = Color(0xFF1B0F3A)
+val Ink = Color(0xFF221B2A)
 
 object Paths {
     private val cache = HashMap<String, Path>()
@@ -50,8 +52,27 @@ object Paths {
         if (d.contains('E') || d.contains('e')) d.replace(EXP) { java.math.BigDecimal(it.value).toPlainString() } else d
 }
 
-/** Contorno de caricatura: un poco más grueso que el trazo pedido, con puntas redondas. */
-private fun outline(sw: Float) = Stroke(sw * 1.3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
+/**
+ * Trazo a mano: el contorno tiembla un poquito (como tinta sobre papel) en vez de ser una línea perfecta.
+ * El temblor es siempre el mismo para cada forma, así no "hierve" entre cuadros.
+ */
+private val HAND = android.graphics.DiscretePathEffect(7f, 1.1f).asComposePathEffect()
+private fun outline(sw: Float) = Stroke(sw * 1.25f, cap = StrokeCap.Round, join = StrokeJoin.Round, pathEffect = HAND)
+
+/** Grano de papel: una textura de puntitos que se repite, para que las escenas parezcan impresas. */
+val PaperGrain: androidx.compose.ui.graphics.ShaderBrush by lazy {
+    val n = 192
+    val r = kotlin.random.Random(11)
+    val px = IntArray(n * n) {
+        val v = r.nextInt(256)
+        val a = if (r.nextFloat() < .5f) r.nextInt(18, 46) else 0
+        android.graphics.Color.argb(a, v, v, v)
+    }
+    val bmp = android.graphics.Bitmap.createBitmap(px, n, n, android.graphics.Bitmap.Config.ARGB_8888).asImageBitmap()
+    androidx.compose.ui.graphics.ShaderBrush(
+        androidx.compose.ui.graphics.ImageShader(bmp, androidx.compose.ui.graphics.TileMode.Repeated, androidx.compose.ui.graphics.TileMode.Repeated),
+    )
+}
 
 /* ---------- Sombreado de caricatura (cel shading) ----------
  * Todo relleno de color liso (y opaco) se pinta como en los dibujos animados: el color plano y una

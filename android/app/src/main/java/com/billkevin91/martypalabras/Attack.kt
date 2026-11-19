@@ -86,7 +86,7 @@ private fun DrawScope.lair(t: Float, vh: Float, bubY: Float, mood: Mood) {
     listOf("A", "Ñ", "B", "V", "H", "Ü").forEachIndexed { k, _ ->
         val x = 70f + k * 100f
         val y = 70f + 20f * sin(t * .8f + k) + (k % 2) * 40f
-        circle(x, y, 13f, Color(0xFF8C7BF0), alpha = .18f)
+        circle(x, y, 13f, Color(0xFF7F93B8), alpha = .18f)
     }
     // burbuja con el dibujo
     val by = bubY + lerp(-8f, 8f, swing(t, 1.6f))
@@ -98,12 +98,12 @@ private fun DrawScope.lair(t: Float, vh: Float, bubY: Float, mood: Mood) {
     val cy = vh - 70f
     for (k in 0 until 4) {
         val p = ((t / 1.4f + k * .25f) % 1f)
-        circle(270f + k * 34f, cy - 30f - 70f * p, 6f + 6f * p, Color(0xFF8C7BF0), alpha = .8f * (1f - p))
+        circle(270f + k * 34f, cy - 30f - 70f * p, 6f + 6f * p, Color(0xFF7F93B8), alpha = .8f * (1f - p))
     }
     ellipse(320f, cy - 18f, 120f, 22f, Color(0xFF6B57D6))
     for (k in 0 until 5) {
         val p = ((t / .9f + k * .2f) % 1f)
-        circle(230f + k * 45f, cy - 22f, 8f * sin(p * PI.toFloat()), Color(0xFF8C7BF0))
+        circle(230f + k * 45f, cy - 22f, 8f * sin(p * PI.toFloat()), Color(0xFF7F93B8))
     }
     path("M196 ${cy - 18}Q190 ${cy + 60} 320 ${cy + 62}Q450 ${cy + 60} 444 ${cy - 18}Z", Color(0xFF2A2350), Ink, 4f)
     ellipse(320f, cy - 18f, 126f, 16f, stroke = Color(0xFF3F3670), sw = 10f)

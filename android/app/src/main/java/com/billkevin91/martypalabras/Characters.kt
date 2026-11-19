@@ -270,7 +270,7 @@ fun DrawScope.borron(t: Float, mood: Mood, talking: Boolean = false) {
     group(y = dy) {
         zoom(sx, sy, 50f, 92f) {
             path("M20 40C14 20 34 10 50 16c18-8 36 4 30 24 12 8 10 30-4 36 2 14-14 20-26 14-14 8-34 0-30-16-12-6-14-22 0-34z", Color(0xFF5B49C9), Color(0xFF3A2B94), 3f)
-            path("M26 30q6-9 15-10", stroke = Color(0xFF8C7BF0), sw = 3f, alpha = .7f)
+            path("M26 30q6-9 15-10", stroke = Color(0xFF7F93B8), sw = 3f, alpha = .7f)
             zoom(1f, blink(t, 4f), 50f, 46f) {
                 ellipse(38f, 46f, 9f, 10f, Color.White); ellipse(62f, 46f, 9f, 10f, Color.White)
                 val (lx, ly) = look(t, 5f)

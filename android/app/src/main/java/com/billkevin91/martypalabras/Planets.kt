@@ -198,7 +198,7 @@ fun GalaxyRoute(g: Game, current: Int) {
                 for (k in 0 until 3) {
                     val sx = c.x + (k - 1) * h * .13f
                     val sy = c.y + rad + h * .1f
-                    drawCircle(if (k < st) Color(0xFFFFD84A) else Color(0xFF3F3299), h * .05f, Offset(sx, sy))
+                    drawCircle(if (k < st) Color(0xFFFFD84A) else Color(0xFF374A6E), h * .05f, Offset(sx, sy))
                 }
             }
         }
