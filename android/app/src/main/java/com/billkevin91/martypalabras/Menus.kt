@@ -369,7 +369,7 @@ fun VoiceScreen(g: Game) {
                 Text("Si está apagado, Marty solo dice lo importante. Tócalo para hablar con él.", style = body(14, C.muted))
             }
             CandyBox(if (g.chatty) C.leaf else Color(0xFF3E5479), 50.dp, padding = PaddingValues(horizontal = 16.dp, vertical = 8.dp), onClick = {
-                g.setChatty(!g.chatty)
+                g.changeChatty(!g.chatty)
             }) { Text(if (g.chatty) "Sí" else "No", style = display(18, if (g.chatty) C.onColor else C.ink)) }
         }
         Buttons {

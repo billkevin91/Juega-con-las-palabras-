@@ -169,7 +169,7 @@ class Game(context: Context) {
     var chatty by mutableStateOf(save.chatty)
         private set
 
-    fun setChatty(on: Boolean) {
+    fun changeChatty(on: Boolean) {
         chatty = on
         save.chatty = on
     }
