@@ -42,6 +42,9 @@ import androidx.compose.ui.unit.dp
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import kotlin.math.sin
+import kotlin.math.cos
+import kotlin.math.PI
 
 @Composable
 fun ModeButton(planetArt: @Composable () -> Unit, title: String, desc: String, modifier: Modifier = Modifier, onClick: () -> Unit) {
@@ -71,6 +74,7 @@ fun HomeScreen(g: Game) {
             Canvas(Modifier.fillMaxSize()) { heroScene(t, tm) }
             Sparkles(Color(0xFFFFF3B0))
         }
+        StatsBar(g, Modifier.popIn(0))
         LevelPicker(g, Modifier.popIn(1))
         ModeButton({ PlanetBall(Color(0xFFFFE07A), Color(0xFFE08A00), true, 56.dp) },
             "Desafío Galáctico", "Visita los ${RETO.size} planetas, gana medallas y un diploma. Superados: $done de ${RETO.size}", Modifier.popIn(2)) { g.retoStart() }
@@ -82,6 +86,33 @@ fun HomeScreen(g: Game) {
             Ghost("Álbum ${g.save.stickers.size}/${WORDS.size}") { g.album() }
             Ghost("Voz de Marty", icon = { SpeakerIcon() }) { g.voiceSettings() }
         }
+    }
+}
+
+/** Fila de logros: racha de días, estrellas ganadas y stickers del álbum. */
+@Composable
+fun StatsBar(g: Game, modifier: Modifier = Modifier) {
+    val streak = g.save.streak
+    val stars = PLANETS.sumOf { g.save.best(it.key) }
+    Row(modifier.fillMaxWidth(), horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+        StatChip("🔥", "$streak", if (streak == 1) "día seguido" else "días seguidos", Color(0xFFFF8A3D), Modifier.weight(1f))
+        StatChip("⭐", "$stars/${PLANETS.size * 3}", "estrellas", C.sun, Modifier.weight(1f))
+        StatChip("🏷️", "${g.save.stickers.size}", "stickers", C.sky, Modifier.weight(1f).tap { g.album() })
+    }
+}
+
+@Composable
+private fun StatChip(icon: String, value: String, label: String, col: Color, modifier: Modifier) {
+    val shape = RoundedCornerShape(18.dp)
+    Column(
+        modifier.panel(shape).border(2.dp, col.copy(alpha = .55f), shape).padding(vertical = 8.dp, horizontal = 4.dp),
+        horizontalAlignment = Alignment.CenterHorizontally,
+    ) {
+        Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            Text(icon, style = body(18))
+            Text(value, style = display(20, col))
+        }
+        Text(label, style = body(12, C.muted), textAlign = TextAlign.Center, maxLines = 1)
     }
 }
 
@@ -178,6 +209,7 @@ fun IntroScreen(g: Game, pi: Int) {
     val t by rememberTime()
     val tm = rememberTextMeasurer()
     GameCard {
+        GalaxyRoute(g, pi)
         Box(Modifier.scene(16f / 9f, Ink, 22.dp, 3.dp)) {
             Canvas(Modifier.fillMaxSize()) { landing(t, p, tm) }
             Sparkles(Color(0xFFFFF3B0), 10)
@@ -193,8 +225,33 @@ fun IntroScreen(g: Game, pi: Int) {
 
 @Composable
 fun EndScreen(g: Game, e: Screen.End) {
+    val time = rememberTime()
     GameCard {
-        PlanetBall(planet(e.k), 90.dp)
+        // El planeta sobre rayos de luz que giran; más rayos y más dorados cuantas más estrellas.
+        Box(contentAlignment = Alignment.Center) {
+            Canvas(Modifier.size(170.dp)) {
+                val c = center
+                val rays = 8 + e.stars * 4
+                val col = if (e.stars > 0) C.sun else C.grape
+                spin(time.value * 12f, c.x, c.y) {
+                    for (i in 0 until rays) {
+                        val a0 = i * 2f * PI.toFloat() / rays
+                        val a1 = a0 + PI.toFloat() / rays * .6f
+                        val rr = size.minDimension / 2
+                        drawPath(
+                            androidx.compose.ui.graphics.Path().apply {
+                                moveTo(c.x, c.y)
+                                lineTo(c.x + cos(a0) * rr, c.y + sin(a0) * rr)
+                                lineTo(c.x + cos(a1) * rr, c.y + sin(a1) * rr)
+                                close()
+                            },
+                            androidx.compose.ui.graphics.Brush.radialGradient(listOf(col.copy(alpha = .55f), Color.Transparent), c, size.minDimension / 2),
+                        )
+                    }
+                }
+            }
+            PlanetBall(planet(e.k), 110.dp)
+        }
         AnimatedStars(e.stars, 64.dp) { i -> g.tone(660 + i * 220) }
         Text("${e.ok} de $N a la primera", style = body(16, C.muted, FontWeight.ExtraBold))
         Buttons {

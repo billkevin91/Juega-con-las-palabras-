@@ -46,6 +46,7 @@ class MainActivity : ComponentActivity() {
             "album" -> { WORDS.shuffled().take(40).forEach { game.save.addSticker(it.text) }; game.album() }
             "picker" -> game.picker()
             "intro" -> game.retoIntro(4)
+            "fin" -> game.demoEnd()
             else -> if (PLANETS.any { it.key == demo }) game.play(demo, Ctx(reto = false))
         }
         setContent {

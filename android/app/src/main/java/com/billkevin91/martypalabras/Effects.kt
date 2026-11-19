@@ -136,11 +136,25 @@ fun androidx.compose.ui.graphics.drawscope.DrawScope.landing(t: Float, p: Planet
         val y = ((k * 53) % 70) / 100f * h
         drawCircle(Color.White, (1f + (k % 3)) * density * .6f, Offset(x, y), alpha = lerp(.3f, 1f, swing(t, 1.5f, k * .13f)))
     }
-    // el planeta, grande, asomando por abajo
+    // nebulosa del color del planeta y una luna lejana
+    drawCircle(androidx.compose.ui.graphics.Brush.radialGradient(listOf(p.a.copy(alpha = .28f), Color.Transparent), Offset(w * .18f, h * .3f), w * .35f), w * .35f, Offset(w * .18f, h * .3f))
+    drawCircle(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color(0x33FF6BD5), Color.Transparent), Offset(w * .85f, h * .2f), w * .3f), w * .3f, Offset(w * .85f, h * .2f))
+    val moon = Offset(w * .84f + w * .02f * sin(t * .3f), h * .22f)
+    drawCircle(androidx.compose.ui.graphics.Brush.radialGradient(listOf(Color(0xFFF2EEFF), Color(0xFF8C82C8)), Offset(moon.x - h * .02f, moon.y - h * .02f), h * .09f), h * .06f, moon)
+    drawCircle(Color(0xFF7A70B8), h * .012f, Offset(moon.x + h * .015f, moon.y + h * .01f), alpha = .7f)
+    // el planeta, grande, asomando por abajo, con su atmósfera brillando en el horizonte
     val s = w * 1.05f
     val left = (w - s) / 2
     val top = h * .52f
+    val pc = Offset(w / 2, top + s / 2)
+    drawCircle(
+        androidx.compose.ui.graphics.Brush.radialGradient(0f to Color.Transparent, .78f to Color.Transparent, .86f to p.a.copy(alpha = .55f), 1f to Color.Transparent, center = pc, radius = s * .62f),
+        s * .62f, pc,
+    )
     inset(left, top, w - left - s, h - top - s) { planetBall(p.a, p.b, p.ring, p.key, t) }
+    // sombra de la nave sobre el planeta
+    val p1 = (t / 2.2f).coerceIn(0f, 1f)
+    drawOval(Color.Black.copy(alpha = .25f * p1), Offset(w / 2 - w * .07f * p1, top + h * .05f), androidx.compose.ui.geometry.Size(w * .14f * p1, h * .035f))
     // la globo-nave baja y luego flota
     val k = minOf(w / 640f, h / 360f) * .78f
     val p0 = (t / 2.2f).coerceIn(0f, 1f)

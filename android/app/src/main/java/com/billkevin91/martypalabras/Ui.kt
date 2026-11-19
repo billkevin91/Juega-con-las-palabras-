@@ -191,55 +191,6 @@ fun StarsRow(n: Int, size: Dp) {
     }
 }
 
-/**
- * Planeta con volumen: degradado, sombra del lado oscuro, brillo, cráteres y anillo que pasa por detrás
- * y por delante. [kind] añade un detalle propio de cada planeta (ondas, telaraña, rayas...).
- */
-fun DrawScope.planetBall(a: Color, b: Color, ring: Boolean, kind: String = "", t: Float = 0f) {
-    val r = size.minDimension / 2 * .82f
-    val c = Offset(size.width / 2, size.height / 2)
-    // halo
-    drawCircle(Brush.radialGradient(listOf(a.copy(alpha = .45f), Color.Transparent), c, r * 1.35f), r * 1.35f, c)
-    // parte trasera del anillo
-    if (ring) spin(-18f, c.x, c.y) {
-        clipRect(0f, 0f, size.width, c.y) { ellipse(c.x, c.y, r * 1.6f, r * .32f, stroke = a, sw = r * .12f, alpha = .9f) }
-    }
-    drawCircle(Brush.radialGradient(listOf(a, b), Offset(c.x - r * .35f, c.y - r * .4f), r * 1.7f), r, c)
-    val surface = Path().apply { addOval(Rect(c, r)) }
-    clipPath(surface) {
-        when (kind) {
-            "pantano" -> for ((dx, dy, rr) in listOf(Triple(-.4f, .1f, .22f), Triple(.25f, -.3f, .16f), Triple(.3f, .4f, .2f)))
-                ellipse(c.x + dx * r, c.y + dy * r, rr * r, rr * r * .6f, Color(0xFF0F5A34), alpha = .55f)
-            "burbuja" -> for (k in -2..2) {
-                val y = c.y + k * r * .38f + r * .08f * sin(t * 2f + k)
-                drawLine(Color.White.copy(alpha = .35f), Offset(c.x - r, y), Offset(c.x + r, y + r * .1f), r * .08f)
-            }
-            "tela" -> for (k in 0 until 6) {
-                val ang = k * 60f * PI.toFloat() / 180f
-                drawLine(Color.White.copy(alpha = .35f), c, Offset(c.x + cos(ang) * r, c.y + sin(ang) * r), r * .03f)
-                drawCircle(Color.White.copy(alpha = .3f), r * (.3f + k * .12f), c, style = Stroke(r * .025f))
-            }
-            "falta" -> spin(-30f, c.x, c.y) {
-                for (k in -3..3) drawRect(Color.White.copy(alpha = .35f), Offset(c.x + k * r * .5f, c.y - r), androidx.compose.ui.geometry.Size(r * .2f, r * 2f))
-            }
-            "lee" -> for (k in 0..2) ellipse(c.x, c.y + r * (.2f + k * .28f), r * 1.1f, r * .12f, Color(0xFFB84A2E), alpha = .35f)
-            else -> for ((dx, dy, rr) in listOf(Triple(-.35f, -.1f, .16f), Triple(.2f, .35f, .12f), Triple(.35f, -.35f, .09f))) {
-                drawCircle(b.copy(alpha = .45f), rr * r, Offset(c.x + dx * r, c.y + dy * r))
-                drawCircle(Color.White.copy(alpha = .25f), rr * r, Offset(c.x + dx * r + rr * r * .2f, c.y + dy * r + rr * r * .2f), style = Stroke(r * .03f))
-            }
-        }
-        // lado en sombra
-        drawCircle(Brush.radialGradient(listOf(Color.Transparent, Color.Transparent, Color(0x99100830)), Offset(c.x - r * .5f, c.y - r * .5f), r * 2.2f), r * 1.05f, c)
-    }
-    // brillo
-    spin(-35f, c.x - r * .38f, c.y - r * .45f) { ellipse(c.x - r * .38f, c.y - r * .45f, r * .28f, r * .14f, Color.White, alpha = .55f) }
-    drawCircle(Color.White.copy(alpha = .25f), r, c, style = Stroke(r * .04f))
-    // parte delantera del anillo
-    if (ring) spin(-18f, c.x, c.y) {
-        clipRect(0f, c.y, size.width, size.height) { ellipse(c.x, c.y, r * 1.6f, r * .32f, stroke = a, sw = r * .12f, alpha = .95f) }
-    }
-}
-
 @Composable
 fun PlanetBall(p: PlanetDef, size: Dp) {
     val t by rememberTime()

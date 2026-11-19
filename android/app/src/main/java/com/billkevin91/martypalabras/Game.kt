@@ -39,6 +39,9 @@ sealed interface Screen {
     data class AttackEnd(val score: Int, val ok: Int, val record: Boolean) : Screen
 }
 
+/** Día de hoy (contado en la zona horaria del teléfono), para la racha. */
+fun today(now: Long = System.currentTimeMillis()): Long = (now + java.util.TimeZone.getDefault().getOffset(now)) / 86_400_000L
+
 /** Progreso guardado en el teléfono. */
 class Save(context: Context) {
     private val p = context.getSharedPreferences("marty", Context.MODE_PRIVATE)
@@ -74,6 +77,19 @@ class Save(context: Context) {
         val now = stickers
         if (word in now) return false
         p.edit().putStringSet("stickers", now + word).apply()
+        return true
+    }
+
+    /** Racha: días seguidos jugando (se cuenta al acertar al menos una palabra en el día). */
+    val streak: Int get() = if (p.getLong("lastDay", -9) >= today() - 1) p.getInt("streak", 0) else 0
+
+    /** Marca el día de hoy como jugado; devuelve true si la racha acaba de crecer. */
+    fun markPlayed(): Boolean {
+        val d = today()
+        val last = p.getLong("lastDay", -9)
+        if (last == d) return false
+        val s = if (last == d - 1) p.getInt("streak", 0) + 1 else 1
+        p.edit().putLong("lastDay", d).putInt("streak", s).apply()
         return true
     }
 
@@ -228,6 +244,14 @@ class Game(context: Context) {
         screen = Screen.Diploma
     }
 
+    /** Solo para las pruebas automáticas: muestra la pantalla de fin de planeta con 3 estrellas. */
+    fun demoEnd() {
+        title = "¡Planeta superado!"
+        react(Mood.HAPPY)
+        celebrate(true)
+        screen = Screen.End("anagrama", Ctx(reto = false), N, 3, true)
+    }
+
     fun runStars(k: String) = run[k] ?: save.best(k)
 
     fun album() {
@@ -287,6 +311,7 @@ class Game(context: Context) {
         if (s.locked) return
         s.locked = true
         if (credit) s.ok++
+        save.markPlayed()
         if (credit && save.addSticker(s.word.text)) {
             val w = s.word
             newSticker = w
