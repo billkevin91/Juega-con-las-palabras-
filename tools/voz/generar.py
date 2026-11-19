@@ -9,9 +9,10 @@ Salida:  <salida>/voz/<palabra>.m4a y <salida>/voz/f/<crc32>.m4a, listos para co
          android/app/src/main/assets/.
 
 Uso: python3 tools/voz/generar.py <salida>
-Necesita: pip install piper-tts, y ffmpeg.
+Necesita: pip install piper-tts imageio-ffmpeg (o ffmpeg instalado).
 """
 import os
+import shutil
 import subprocess
 import sys
 import tempfile
@@ -23,6 +24,15 @@ from piper import PiperVoice, SynthesisConfig
 # Voz masculina latinoamericana (México) para Marty, Borrón y el dictado.
 VOICE = "es_MX-ald-medium"
 URL = "https://huggingface.co/rhasspy/piper-voices/resolve/main/es/es_MX/ald/medium/"
+
+def ffmpeg_exe():
+    """ffmpeg del sistema, o el que trae el paquete imageio-ffmpeg (pip install imageio-ffmpeg)."""
+    exe = shutil.which("ffmpeg")
+    if exe:
+        return exe
+    import imageio_ffmpeg
+    return imageio_ffmpeg.get_ffmpeg_exe()
+
 
 ROOT = os.path.dirname(os.path.dirname(os.path.dirname(os.path.abspath(__file__))))
 LISTAS = os.path.join(ROOT, "android", "app", "build", "voz")
@@ -49,6 +59,8 @@ def filtro(quien, sr):
 
 def main():
     salida = sys.argv[1] if len(sys.argv) > 1 else "voz-generada"
+    global FFMPEG
+    FFMPEG = ffmpeg_exe()
     voice = PiperVoice.load(descargar(os.path.join(tempfile.gettempdir(), "piper-voces")))
     sr = voice.config.sample_rate
     trabajos = []
@@ -71,7 +83,7 @@ def main():
             with wave.open(wav, "wb") as wf:
                 voice.synthesize_wav(texto, wf, syn_config=SynthesisConfig(length_scale=lento, noise_scale=0.6, noise_w_scale=0.7))
             subprocess.run(
-                ["ffmpeg", "-y", "-loglevel", "error", "-i", wav, "-af", filtro(quien, sr),
+                [FFMPEG, "-y", "-loglevel", "error", "-i", wav, "-af", filtro(quien, sr),
                  "-ac", "1", "-c:a", "aac", "-b:a", "40k", destino],
                 check=True,
             )

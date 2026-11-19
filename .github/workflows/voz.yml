@@ -16,6 +16,7 @@ permissions:
 jobs:
   voz:
     runs-on: ubuntu-latest
+    timeout-minutes: 45
     steps:
       - uses: actions/checkout@v4
 
@@ -37,9 +38,9 @@ jobs:
           python-version: "3.12"
 
       - name: Generar la voz
+        timeout-minutes: 30
         run: |
-          sudo apt-get install -y ffmpeg > /dev/null
-          pip install piper-tts
+          pip install piper-tts imageio-ffmpeg
           python tools/voz/generar.py voz-generada
 
       - name: Publicar en la rama voz-ci
