@@ -333,26 +333,26 @@ private fun DrawScope.borronFlees(t: Float) {
     // Marty entra corriendo con el borrador, lo levanta, persigue a Borrón y vuelve a saludar.
     val runIn = ease(phase(t, 0f, 1.8f))
     val chase = phase(t, 3.4f, 6.4f)
-    val back = ease(phase(t, 7f, 8.4f))
+    val back = ease(phase(t, 6.4f, 7.8f))
     val mx = when {
         t < 3.4f -> lerp(-120f, 210f, runIn)
-        t < 7f -> lerp(210f, 700f, chase * chase)
+        t < 6.4f -> lerp(210f, 760f, chase * chase)
         else -> lerp(760f, 320f, back)
     }
-    val running = (t < 1.8f) || (t in 3.4f..6.4f) || (t in 7f..8.4f)
+    val running = (t < 1.8f) || (t in 3.4f..7.8f)
     val bounce = if (running) abs(sin(t * 12f)) * 14f else 0f
-    val tilt = if (running) (if (t in 7f..8.4f) -10f else 10f) else 0f
+    val tilt = if (running) (if (t >= 6.4f) -10f else 10f) else 0f
     if (mx < 720f) {
-        if (running) dust(t, mx, 368f, if (t in 7f..8.4f) -1f else 1f)
+        if (running) dust(t, mx, 368f, if (t >= 6.4f) -1f else 1f)
         martyAt(t, mx, 368f - bounce, .95f, rot = tilt)
         // El borrador: lo lleva en alto y lo sacude cuando asusta a Borrón.
         val raise = if (t in 1.8f..3.4f) 1f else .4f
         val wobble = if (t in 2f..3.4f) 14f * sin(t * 18f) else 0f
-        if (t < 7f) eraser(mx + 60f, 368f - bounce - 150f - raise * 40f, 20f + wobble)
+        if (t < 6.4f) eraser(mx + 60f, 368f - bounce - 150f - raise * 40f, 20f + wobble)
     }
     // Final: escenario limpio y brillante.
-    if (t > 8.2f) for (i in 0 until 12) {
-        val q = ((t - 8.2f) * .8f + i * .083f) % 1f
+    if (t > 7.6f) for (i in 0 until 12) {
+        val q = ((t - 7.6f) * .8f + i * .083f) % 1f
         val a = i * 30f * PI.toFloat() / 180f
         circle(320f + cos(a) * (60f + q * 160f), 250f + sin(a) * (40f + q * 90f), 3.5f, Color(0xFFFFE36A), alpha = 1f - q)
     }
