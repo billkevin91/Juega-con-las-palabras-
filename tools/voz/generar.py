@@ -50,11 +50,14 @@ def descargar(dest):
 
 # Efectos de sonido con ffmpeg: Marty un poco más agudo y alegre; Borrón grave y con eco travieso.
 def filtro(quien, sr):
+    # Silencio corto al inicio y al final: algunos teléfonos tardan en arrancar el audio y
+    # se comerían la primera sílaba.
+    bordes = "adelay=120:all=1,apad=pad_dur=0.15"
     if quien == "marty":
-        return f"asetrate={sr}*1.07,aresample={sr},atempo=0.97"
+        return f"asetrate={sr}*1.07,aresample={sr},atempo=0.97,{bordes}"
     if quien == "borron":
-        return f"asetrate={sr}*0.80,aresample={sr},atempo=1.18,aecho=0.8:0.6:45:0.22"
-    return f"aresample={sr}"  # palabras: voz natural, sin cambios
+        return f"asetrate={sr}*0.80,aresample={sr},atempo=1.18,aecho=0.8:0.6:45:0.22,{bordes}"
+    return f"aresample={sr},{bordes}"  # palabras: voz natural, sin cambios
 
 
 def main():
