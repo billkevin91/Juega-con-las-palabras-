@@ -112,8 +112,9 @@ fun Modifier.candy(color: Color, pressed: Boolean, radius: Dp, depth: Dp = 5.dp)
     drawRoundRect(colorLerp(color, Ink, .35f), Offset(line, d), Size(size.width - line * 2, faceH - line), cr)
     drawRoundRect(color, Offset(0f, off), Size(size.width, faceH), cr)
     val g = 4.dp.toPx()
-    val hr = minOf(r * .6f, faceH * .12f)
-    drawRoundRect(Color.White.copy(alpha = .55f), Offset(g * 2.2f, off + g), Size((size.width - g * 4.4f) * .55f, faceH * .16f), CornerRadius(hr, hr))
+    val bh = minOf(faceH * .1f, 5.dp.toPx())
+    val bx = minOf(r * .7f, size.width * .2f) + g
+    drawRoundRect(Color.White.copy(alpha = .45f), Offset(bx, off + g * 1.2f), Size((size.width - bx * 2) * .45f, bh), CornerRadius(bh / 2, bh / 2))
     drawRoundRect(Ink, Offset(0f, off), Size(size.width, faceH), cr, style = Stroke(line))
 }
 

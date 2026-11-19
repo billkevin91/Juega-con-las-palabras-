@@ -91,14 +91,6 @@ private fun androidx.compose.ui.graphics.drawscope.DrawScope.space(t: Float) {
     drawRect(Brush.verticalGradient(*bands(4, arrayOf(0f to C.space, 1f to C.space2))))
     val w = size.width
     val h = size.height
-    // Planetitas lejanos, planos y con contorno, que flotan despacio.
-    for ((x, y, c) in listOf(Triple(.12f, .18f, Color(0xFFFF9DB4)), Triple(.9f, .5f, Color(0xFF8FDCFF)), Triple(.2f, .88f, Color(0xFFFFC58A)))) {
-        val o = Offset(w * x, h * y + 6f * density * wave(t, 6f, x))
-        val r = w * .045f
-        drawCircle(Color(0xFF0A0620), r + 2.5f * density, o, alpha = .55f)
-        drawCircle(c.copy(alpha = .45f), r, o)
-        drawCircle(Color.White.copy(alpha = .35f), r * .3f, Offset(o.x - r * .35f, o.y - r * .35f))
-    }
     // Paralaje: las estrellas grandes (cercanas) se mueven más que las pequeñas al inclinar el teléfono.
     // Las más grandes son estrellitas de 4 puntas de caricatura; las demás, puntitos.
     STARS.forEach { (x, y, r, ph) ->
