@@ -82,8 +82,8 @@ private fun Sticker(w: Word, owned: Boolean, col: Color, sway: () -> Float, modi
             .graphicsLayer { rotationZ = if (owned) sway() * 3f else 0f }
             .shadow(if (owned) 6.dp else 0.dp, shape)
             .clip(shape)
-            .background(if (owned) Brush.verticalGradient(listOf(Color.White, col.copy(alpha = .55f))) else Brush.verticalGradient(listOf(C.space2, C.space)))
-            .border(3.dp, if (owned) Color.White else C.line, shape)
+            .background(if (owned) androidx.compose.ui.graphics.lerp(col, Color.White, .55f) else C.space2)
+            .border(3.dp, if (owned) Ink else C.line, shape)
             .then(if (owned) Modifier.tap(onClick = onTap) else Modifier)
             .padding(4.dp),
         horizontalAlignment = Alignment.CenterHorizontally,
@@ -115,8 +115,8 @@ fun StickerToast(w: Word?) {
             val shape = RoundedCornerShape(22.dp)
             Row(
                 Modifier.shadow(12.dp, shape).clip(shape)
-                    .background(Brush.verticalGradient(listOf(Color(0xFFFFE27A), C.sun)))
-                    .border(3.dp, Color.White, shape)
+                    .background(C.sun)
+                    .border(3.dp, Ink, shape)
                     .padding(horizontal = 18.dp, vertical = 8.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),

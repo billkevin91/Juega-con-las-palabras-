@@ -50,11 +50,12 @@ object Paths {
         if (d.contains('E') || d.contains('e')) d.replace(EXP) { java.math.BigDecimal(it.value).toPlainString() } else d
 }
 
-private fun outline(sw: Float) = Stroke(sw, cap = StrokeCap.Round, join = StrokeJoin.Round)
+/** Contorno de caricatura: un poco más grueso que el trazo pedido, con puntas redondas. */
+private fun outline(sw: Float) = Stroke(sw * 1.3f, cap = StrokeCap.Round, join = StrokeJoin.Round)
 
-/* ---------- Volumen automático ----------
- * Todo relleno de color liso (y opaco) se pinta con luz: más claro arriba / a la izquierda y más
- * oscuro abajo. Así ningún dibujo se ve plano. Los degradados se guardan para no crearlos en
+/* ---------- Sombreado de caricatura (cel shading) ----------
+ * Todo relleno de color liso (y opaco) se pinta como en los dibujos animados: el color plano y una
+ * sombra de un solo tono, con borde nítido (sin degradados suaves). Los degradados se guardan para no crearlos en
  * cada fotograma; las formas se dibujan trasladadas para que el degradado sirva en cualquier posición.
  */
 object Shade {
@@ -77,15 +78,18 @@ private data class RadKey(val c: ULong, val rx: Float, val ry: Float)
 private data class PathKey(val c: ULong, val d: String)
 
 private fun linear(c: Color, h: Float) = Shade.brush(LinKey(c.value, h)) {
-    Brush.verticalGradient(0f to Shade.light(c, .28f), .45f to c, 1f to Shade.dark(c, .22f), startY = 0f, endY = h)
+    Brush.verticalGradient(*cel(c, .64f), startY = 0f, endY = h)
 }
 
-/** Luz redonda para círculos y óvalos: el brillo cae arriba a la izquierda. */
+/** Color plano hasta [at] y sombra de un tono desde ahí, con corte nítido. */
+private fun cel(c: Color, at: Float): Array<Pair<Float, Color>> {
+    val d = Shade.dark(c, .2f)
+    return arrayOf(0f to c, at to c, at to d, 1f to d)
+}
+
+/** Círculos y óvalos: color plano con una media luna de sombra abajo a la derecha. */
 private fun radial(c: Color, rx: Float, ry: Float) = Shade.brush(RadKey(c.value, rx, ry)) {
-    Brush.radialGradient(
-        0f to Shade.light(c, .38f), .35f to c, 1f to Shade.dark(c, .25f),
-        center = Offset(rx * .62f, ry * .55f), radius = maxOf(rx, ry) * 1.55f,
-    )
+    Brush.radialGradient(*cel(c, .78f), center = Offset(rx * .8f, ry * .72f), radius = maxOf(rx, ry) * 1.3f)
 }
 
 fun DrawScope.path(
@@ -97,7 +101,7 @@ fun DrawScope.path(
         val b = Paths.boundsOf(d)
         if (Shade.applies(fill, alpha, b.height)) {
             val br = Shade.brush(PathKey(fill.value, d)) {
-                Brush.verticalGradient(0f to Shade.light(fill, .28f), .45f to fill, 1f to Shade.dark(fill, .22f), startY = b.top, endY = b.bottom)
+                Brush.verticalGradient(*cel(fill, .64f), startY = b.top, endY = b.bottom)
             }
             drawPath(p, br, alpha)
         } else drawPath(p, fill, alpha)
@@ -194,11 +198,34 @@ inline fun DrawScope.viewBox(w: Float, h: Float, block: DrawScope.() -> Unit) {
     }, block)
 }
 
+/**
+ * Degradados en franjas: en vez de un paso suave, el color cambia en bandas nítidas, como en los
+ * fondos pintados de las caricaturas.
+ */
+fun bands(n: Int, stops: Array<out Pair<Float, Color>>): Array<Pair<Float, Color>> {
+    if (stops.size < 2) return arrayOf(*stops)
+    fun at(f: Float): Color {
+        for (i in 1 until stops.size) if (f <= stops[i].first) {
+            val (a, ca) = stops[i - 1]
+            val (b, cb) = stops[i]
+            return colorLerp(ca, cb, if (b > a) ((f - a) / (b - a)).coerceIn(0f, 1f) else 1f)
+        }
+        return stops.last().second
+    }
+    val out = ArrayList<Pair<Float, Color>>()
+    for (k in 0 until n) {
+        val c = at((k + .5f) / n)
+        out += k / n.toFloat() to c
+        out += (k + 1) / n.toFloat() to c
+    }
+    return out.toTypedArray()
+}
+
 fun vGrad(y0: Float, y1: Float, vararg stops: Pair<Float, Color>) =
-    Brush.verticalGradient(*stops, startY = y0, endY = y1)
+    Brush.verticalGradient(*bands(5, stops), startY = y0, endY = y1)
 
 fun rGrad(cx: Float, cy: Float, r: Float, vararg stops: Pair<Float, Color>) =
-    Brush.radialGradient(*stops, center = Offset(cx, cy), radius = r)
+    Brush.radialGradient(*bands(3, stops), center = Offset(cx, cy), radius = r)
 
 /** Tamaño de letra en unidades del dibujo actual. */
 fun DrawScope.units(u: Float): TextUnit = (u / (density * fontScale)).sp

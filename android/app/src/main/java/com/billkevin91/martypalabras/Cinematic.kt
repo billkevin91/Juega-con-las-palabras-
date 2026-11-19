@@ -109,8 +109,6 @@ private fun phase(t: Float, a: Float, b: Float) = ((t - a) / (b - a)).coerceIn(0
 /** Fondo de espacio con estrellas; con [speed] > 0 las estrellas se estiran como en un viaje rápido. */
 private fun DrawScope.spaceBg(t: Float, speed: Float, top: Color = Color(0xFF0B0828), bottom: Color = Color(0xFF2B1F78)) {
     rect(0f, 0f, VW, VH, brush = vGrad(0f, VH, 0f to top, 1f to bottom))
-    circle(140f, 120f, 160f, brush = rGrad(140f, 120f, 160f, 0f to Color(0x40FF6BD5), 1f to Color.Transparent))
-    circle(520f, 300f, 180f, brush = rGrad(520f, 300f, 180f, 0f to Color(0x3355C8FF), 1f to Color.Transparent))
     for (k in 0 until 46) {
         val depth = .3f + (k % 5) * .17f
         val x0 = (k * 137f) % VW
@@ -379,6 +377,4 @@ private fun DrawScope.finale(t: Float) {
         rect(dx - 15f, dy - 6f, 30f, 12f, 0f, Color(0xFFFF6B8B), Ink, 2f)
         path("M${dx} ${dy + 6}l-8 22l8-6l8 6z", Color(0xFFFF6B8B), Ink, 2f)
     }
-    // Brillo dorado detrás del diploma.
-    circle(dx, dy, 60f, brush = rGrad(dx, dy, 60f, 0f to Color(0x66FFE36A), 1f to Color.Transparent))
 }

@@ -246,7 +246,7 @@ fun EndScreen(g: Game, e: Screen.End) {
                                 lineTo(c.x + cos(a1) * rr, c.y + sin(a1) * rr)
                                 close()
                             },
-                            androidx.compose.ui.graphics.Brush.radialGradient(listOf(col.copy(alpha = .55f), Color.Transparent), c, size.minDimension / 2),
+                            col.copy(alpha = .35f),
                         )
                     }
                 }

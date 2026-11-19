@@ -87,13 +87,13 @@ fun DrawScope.planetBall(a: Color, b: Color, ring: Boolean, kind: String = "", t
     val r = size.minDimension / 2 * .82f
     val c = Offset(size.width / 2, size.height / 2)
     val lk = look(kind, a, b)
-    // Halo de atmósfera alrededor.
-    drawCircle(Brush.radialGradient(0f to Color.Transparent, .68f to lk.air.copy(alpha = .38f), 1f to Color.Transparent, center = c, radius = r * 1.45f), r * 1.45f, c)
+    // Atmósfera de caricatura: un aro plano y claro alrededor del planeta.
+    drawCircle(lk.air.copy(alpha = .3f), r * 1.12f, c)
     // Parte trasera del anillo.
     if (ring) spin(-18f, c.x, c.y) {
         clipRect(0f, 0f, size.width, c.y) { ringBand(c, r, a, b) }
     }
-    drawCircle(Brush.radialGradient(listOf(a, b), Offset(c.x - r * .35f, c.y - r * .4f), r * 1.7f), r, c)
+    drawCircle(a, r, c)
     clipPath(Path().apply { addOval(Rect(c, r)) }) {
         // Franjas (planetas gaseosos), con borde ondulado que se mueve.
         for ((lat, col) in lk.bands) {
@@ -110,17 +110,17 @@ fun DrawScope.planetBall(a: Color, b: Color, ring: Boolean, kind: String = "", t
             sphereSpot(c, r, lon, lat, .16f, Color.White, .55f, stretch = 2.2f)
             sphereSpot(c, r, lon + .03f, lat - .05f, .1f, Color.White, .5f, stretch = 1.8f)
         }
-        // Lado de noche.
-        drawCircle(
-            Brush.radialGradient(0f to Color.Transparent, .55f to Color.Transparent, 1f to Color(0xB0100830), center = Offset(c.x - r * .45f, c.y - r * .45f), radius = r * 2.1f),
-            r * 1.05f, c,
-        )
-        // Luz de borde (atmósfera iluminada por dentro).
-        drawCircle(Brush.radialGradient(0f to Color.Transparent, .82f to Color.Transparent, 1f to lk.air.copy(alpha = .6f), center = c, radius = r), r, c)
+        // Lado de noche: media luna de sombra con borde nítido, del color oscuro del planeta.
+        val off = r * .38f
+        val night = Path().apply { addOval(Rect(c, r * 1.02f)) }
+        val lit = Path().apply { addOval(Rect(Offset(c.x - off, c.y - off), r * 1.12f)) }
+        drawPath(Path.combine(androidx.compose.ui.graphics.PathOperation.Difference, night, lit), b, alpha = .75f)
     }
-    // Brillo especular.
-    spin(-35f, c.x - r * .38f, c.y - r * .45f) { ellipse(c.x - r * .38f, c.y - r * .45f, r * .28f, r * .14f, Color.White, alpha = .5f) }
-    drawCircle(Color.White.copy(alpha = .22f), r, c, style = Stroke(r * .035f))
+    // Brillo de caricatura: una "ventanita" blanca plana arriba a la izquierda.
+    spin(-35f, c.x - r * .4f, c.y - r * .48f) {
+        drawOval(Color.White.copy(alpha = .75f), Offset(c.x - r * .62f, c.y - r * .6f), androidx.compose.ui.geometry.Size(r * .42f, r * .2f))
+    }
+    drawCircle(Ink, r, c, style = Stroke(maxOf(r * .06f, 2f)))
     // Parte delantera del anillo.
     if (ring) spin(-18f, c.x, c.y) {
         clipRect(0f, c.y, size.width, size.height) { ringBand(c, r, a, b) }
@@ -129,9 +129,9 @@ fun DrawScope.planetBall(a: Color, b: Color, ring: Boolean, kind: String = "", t
 
 /** Anillo con varias bandas y partículas que lo recorren. */
 private fun DrawScope.ringBand(c: Offset, r: Float, a: Color, b: Color) {
-    ellipse(c.x, c.y, r * 1.62f, r * .33f, stroke = b, sw = r * .05f, alpha = .7f)
-    ellipse(c.x, c.y, r * 1.5f, r * .3f, stroke = a, sw = r * .1f, alpha = .9f)
-    ellipse(c.x, c.y, r * 1.36f, r * .27f, stroke = Color.White, sw = r * .025f, alpha = .45f)
+    ellipse(c.x, c.y, r * 1.5f, r * .3f, stroke = Ink, sw = r * .17f)
+    ellipse(c.x, c.y, r * 1.5f, r * .3f, stroke = a, sw = r * .1f)
+    ellipse(c.x, c.y, r * 1.62f, r * .33f, stroke = b, sw = r * .03f)
 }
 
 /** Una mancha redonda sobre la esfera: se achata y se esconde al girar hacia el otro lado. */
@@ -184,7 +184,10 @@ fun GalaxyRoute(g: Game, current: Int) {
             val p = planet(RETO[i])
             val c = pts[i]
             val rad = h * (if (i == current) .36f + .03f * sin(t * 4f) else .27f)
-            if (i == current) drawCircle(Brush.radialGradient(listOf(C.sun.copy(alpha = .55f), Color.Transparent), c, rad * 1.8f), rad * 1.8f, c)
+            if (i == current) {
+                drawCircle(C.sun.copy(alpha = .35f), rad * 1.45f, c)
+                drawCircle(C.sun, rad * 1.45f, c, style = Stroke(h * .02f))
+            }
             inset(c.x - rad, c.y - rad, size.width - c.x - rad, size.height - c.y - rad) {
                 planetBall(p.a, p.b, p.ring, p.key, t)
             }
@@ -203,7 +206,9 @@ fun GalaxyRoute(g: Game, current: Int) {
         val m = pts[current.coerceIn(0, n - 1)]
         val bob = sin(t * 3f) * h * .03f
         val top = Offset(m.x, m.y - h * .42f + bob)
-        drawCircle(Brush.radialGradient(listOf(Color(0xFFFFB3C7), Color(0xFF6FC8FF)), Offset(top.x - h * .03f, top.y - h * .03f), h * .14f), h * .1f, top)
+        drawCircle(Ink, h * .115f, top)
+        drawCircle(Color(0xFFFF8FB0), h * .1f, top)
+        drawCircle(Color(0xFF6FC8FF), h * .1f, top, style = Stroke(h * .03f))
         drawLine(Color(0xFF8A5A2B), Offset(top.x - h * .06f, top.y + h * .07f), Offset(top.x - h * .04f, top.y + h * .15f), h * .012f)
         drawLine(Color(0xFF8A5A2B), Offset(top.x + h * .06f, top.y + h * .07f), Offset(top.x + h * .04f, top.y + h * .15f), h * .012f)
         drawRoundRect(Color(0xFFC98A3A), Offset(top.x - h * .06f, top.y + h * .14f), androidx.compose.ui.geometry.Size(h * .12f, h * .05f), androidx.compose.ui.geometry.CornerRadius(h * .02f))

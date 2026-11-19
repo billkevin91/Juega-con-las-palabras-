@@ -7,6 +7,7 @@ import androidx.compose.runtime.remember
 import androidx.compose.ui.draw.drawWithContent
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
+import androidx.compose.ui.draw.drawBehind
 import androidx.compose.ui.geometry.Offset
 import androidx.compose.ui.graphics.Brush
 import androidx.compose.ui.graphics.StrokeCap
@@ -35,11 +36,17 @@ import kotlin.random.Random
 
 /* Piezas compartidas por las escenas de los planetas. */
 
-/** Contenedor de escena con proporción fija, esquinas redondeadas y borde. */
-fun Modifier.scene(ratio: Float, border: Color = Color(0xFF44399A), radius: Dp = 22.dp, width: Dp = 2.dp): Modifier {
+/** Contenedor de escena: proporción fija, borde grueso y sombra dura, como una viñeta de caricatura. */
+fun Modifier.scene(ratio: Float, border: Color = Ink, radius: Dp = 22.dp, width: Dp = 3.dp): Modifier {
     val shape = RoundedCornerShape(radius)
-    return fillMaxWidth().aspectRatio(ratio).tilt3d().shadow(10.dp, shape, ambientColor = Color(0xFF7A5AE0), spotColor = Color(0xFF7A5AE0))
-        .clip(shape).sceneLight().border(width, border, shape)
+    return fillMaxWidth().aspectRatio(ratio).tilt3d().hardShadow(radius)
+        .clip(shape).sceneLight().border(maxOf(width, 3.dp), Ink, shape)
+}
+
+/** Sombra de caricatura: una copia oscura de la forma, desplazada hacia abajo, sin difuminar. */
+fun Modifier.hardShadow(radius: Dp, offset: Dp = 5.dp): Modifier = drawBehind {
+    val r = radius.toPx()
+    drawRoundRect(Color(0xCC0A0620), Offset(0f, offset.toPx()), size, CornerRadius(r, r))
 }
 
 /**
@@ -48,13 +55,11 @@ fun Modifier.scene(ratio: Float, border: Color = Color(0xFF44399A), radius: Dp =
  */
 fun Modifier.sceneLight(): Modifier = drawWithContent {
     drawContent()
-    val w = size.width
-    val h = size.height
-    drawRect(Brush.radialGradient(listOf(Color.Transparent, Color.Transparent, Color(0x5A0A0420)), Offset(w / 2, h * .45f), maxOf(w, h) * .78f))
-    drawRect(Brush.verticalGradient(0f to Color(0x24FFFFFF), .22f to Color.Transparent))
+    // Estilo caricatura: solo un filo blanco por dentro del borde, como el brillo de una viñeta impresa.
+    val g = 4.dp.toPx()
     drawRoundRect(
-        Brush.verticalGradient(listOf(Color(0x66FFFFFF), Color.Transparent, Color(0x22FFFFFF))),
-        cornerRadius = CornerRadius(22.dp.toPx()), style = Stroke(3.dp.toPx()),
+        Color.White.copy(alpha = .18f), Offset(g, g), androidx.compose.ui.geometry.Size(size.width - g * 2, size.height - g * 2),
+        CornerRadius(18.dp.toPx()), style = Stroke(1.5.dp.toPx()),
     )
 }
 
@@ -74,7 +79,6 @@ fun Sparkles(color: Color = Color.White, count: Int = 14) {
             val cx = size.width * x
             val cy = size.height * y - u * 4 * p
             val r = u * 1.6f * s * (.5f + .5f * a)
-            drawCircle(color.copy(alpha = .22f * a), r * 1.3f, Offset(cx, cy))
             // estrella de cuatro puntas con lados curvos
             val k = r * .18f
             star.reset()
@@ -84,7 +88,9 @@ fun Sparkles(color: Color = Color.White, count: Int = 14) {
             star.quadraticBezierTo(cx - k, cy + k, cx - r, cy)
             star.quadraticBezierTo(cx - k, cy - k, cx, cy - r)
             star.close()
-            drawPath(star, color.copy(alpha = a))
+            // Estrella de caricatura: color plano y contorno oscuro; aparece "saltando" (crece y se encoge).
+            drawPath(star, Color(0xFFFFE36A).copy(alpha = a))
+            drawPath(star, Ink.copy(alpha = a), style = Stroke(u * .45f, join = androidx.compose.ui.graphics.StrokeJoin.Round))
         }
     }
 }

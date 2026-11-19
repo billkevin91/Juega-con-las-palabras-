@@ -10,6 +10,8 @@ import androidx.compose.foundation.layout.BoxScope
 import androidx.compose.foundation.layout.PaddingValues
 import androidx.compose.foundation.layout.offset
 import androidx.compose.ui.draw.drawBehind
+import androidx.compose.ui.graphics.drawOutline
+import androidx.compose.ui.graphics.drawscope.translate
 import androidx.compose.ui.draw.shadow
 import androidx.compose.ui.geometry.CornerRadius
 import androidx.compose.ui.geometry.Size
@@ -104,18 +106,15 @@ fun Modifier.candy(color: Color, pressed: Boolean, radius: Dp, depth: Dp = 5.dp)
     val cr = CornerRadius(r, r)
     val faceH = size.height - d
     val off = if (pressed) d * .75f else 0f
-    drawRoundRect(Color(0x40000000), Offset(2f, d + 3f), Size(size.width - 4f, faceH), cr)
-    drawRoundRect(colorLerp(color, Color(0xFF14082E), .45f), Offset(0f, d), Size(size.width, faceH), cr)
-    drawRoundRect(
-        Brush.verticalGradient(listOf(colorLerp(color, Color.White, .25f), color, colorLerp(color, Color(0xFF14082E), .12f)), off, off + faceH),
-        Offset(0f, off), Size(size.width, faceH), cr,
-    )
-    val g = 3.dp.toPx()
-    drawRoundRect(
-        Brush.verticalGradient(listOf(Color.White.copy(alpha = .45f), Color.White.copy(alpha = 0f)), off + g, off + faceH * .55f),
-        Offset(g * 2, off + g), Size(size.width - g * 4, faceH * .45f), CornerRadius(r * .8f, r * .8f),
-    )
-    drawRoundRect(colorLerp(color, Color(0xFF14082E), .55f), Offset(0f, off), Size(size.width, faceH), cr, style = Stroke(2.dp.toPx()))
+    // Botón de caricatura: cara de color plano, canto oscuro, contorno grueso y un brillo blanco nítido.
+    val line = 2.5.dp.toPx()
+    drawRoundRect(Ink, Offset(0f, d), Size(size.width, faceH), cr)
+    drawRoundRect(colorLerp(color, Ink, .35f), Offset(line, d), Size(size.width - line * 2, faceH - line), cr)
+    drawRoundRect(color, Offset(0f, off), Size(size.width, faceH), cr)
+    val g = 4.dp.toPx()
+    val hr = minOf(r * .6f, faceH * .12f)
+    drawRoundRect(Color.White.copy(alpha = .55f), Offset(g * 2.2f, off + g), Size((size.width - g * 4.4f) * .55f, faceH * .16f), CornerRadius(hr, hr))
+    drawRoundRect(Ink, Offset(0f, off), Size(size.width, faceH), cr, style = Stroke(line))
 }
 
 /** Caja que se pulsa con relieve de caramelo; el contenido baja junto con la cara del botón. */
@@ -134,11 +133,12 @@ fun CandyBox(
     }
 }
 
-/** Fondo de tarjeta: degradado violeta, borde con brillo arriba y sombra de color. */
+/** Fondo de tarjeta de caricatura: color plano, contorno grueso y sombra dura debajo. */
 fun Modifier.panel(shape: androidx.compose.ui.graphics.Shape): Modifier =
-    shadow(12.dp, shape, ambientColor = Color(0xFF7A5AE0), spotColor = Color(0xFF5A3FC0)).clip(shape)
-        .background(Brush.verticalGradient(listOf(Color(0xFF3A2E92), C.card, Color(0xFF211960))))
-        .border(2.dp, Brush.verticalGradient(listOf(Color(0xFF8C7BF0), C.line, Color(0xFF2E2470))), shape)
+    drawBehind {
+        val o = shape.createOutline(size, layoutDirection, this)
+        translate(0f, 5.dp.toPx()) { drawOutline(o, Color(0xCC0A0620)) }
+    }.clip(shape).background(C.card).border(3.dp, Ink, shape)
 
 @Composable
 fun GameCard(modifier: Modifier = Modifier, content: @Composable ColumnScope.() -> Unit) {
