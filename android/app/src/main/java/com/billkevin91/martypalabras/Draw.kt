@@ -20,7 +20,7 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.lerp as colorLerp
-import androidx.compose.ui.graphics.asComposePathEffect
+import androidx.compose.ui.graphics.toComposePathEffect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.text.TextMeasurer
@@ -56,7 +56,7 @@ object Paths {
  * Trazo a mano: el contorno tiembla un poquito (como tinta sobre papel) en vez de ser una línea perfecta.
  * El temblor es siempre el mismo para cada forma, así no "hierve" entre cuadros.
  */
-private val HAND = android.graphics.DiscretePathEffect(7f, 1.1f).asComposePathEffect()
+private val HAND = android.graphics.DiscretePathEffect(7f, 1.1f).toComposePathEffect()
 private fun outline(sw: Float) = Stroke(sw * 1.25f, cap = StrokeCap.Round, join = StrokeJoin.Round, pathEffect = HAND)
 
 /** Grano de papel: una textura de puntitos que se repite, para que las escenas parezcan impresas. */
