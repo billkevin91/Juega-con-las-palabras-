@@ -99,6 +99,11 @@ class Save(context: Context) {
         get() = p.getBoolean("introSeen", false)
         set(v) = p.edit().putBoolean("introSeen", v).apply()
 
+    /** Marty comenta cada jugada en voz alta (si no, solo lo importante; lo demás aparece escrito). */
+    var chatty: Boolean
+        get() = p.getBoolean("chatty", false)
+        set(v) = p.edit().putBoolean("chatty", v).apply()
+
     fun best(k: String) = p.getInt("best_$k", 0)
     fun setBest(k: String, v: Int) = p.edit().putInt("best_$k", v).apply()
 }
@@ -157,17 +162,48 @@ class Game(context: Context) {
      * Las frases de un mismo tipo no se repiten en voz alta en menos de 3,5 segundos, y las que son
      * solo para el globo (comentarios de cada letra) no se dicen: así Marty no habla sin parar.
      */
-    fun say(l: Line) {
+    private var lastLine: Line? = null
+    private var lastVoiced = false
+
+    /** Marty dirá en voz alta los comentarios de cada jugada (si no, solo aparecen escritos). */
+    var chatty by mutableStateOf(save.chatty)
+        private set
+
+    fun setChatty(on: Boolean) {
+        chatty = on
+        save.chatty = on
+    }
+
+    fun say(l: Line, force: Boolean = false) {
         text = l.text
         who = l.who
-        if (!l.voice) return
+        lastLine = l
+        lastVoiced = false
+        if (!l.voice && !force) return
+        if (l.chat && !chatty && !force) return
         val k = l.kind
         val now = android.os.SystemClock.uptimeMillis()
-        if (k != null) {
+        if (k != null && !force) {
             if (now - (spokenAt[k] ?: 0L) < 3500L) return
             spokenAt[k] = now
         }
+        lastVoiced = true
         speech.speakLine(l)
+    }
+
+    /** Al tocar a Marty: lee lo que dice su globo; si ya lo dijo, cuenta algo nuevo. */
+    fun tapHost() {
+        sfx(Sfx.POP)
+        val l = lastLine
+        if (l != null && !lastVoiced) {
+            lastVoiced = true
+            speech.speakLine(l)
+            react(Mood.HAPPY)
+            return
+        }
+        if (who == Who.BORRON) { react(Mood.HAPPY); return }
+        react(Mood.HAPPY)
+        say(Frases.charla(), force = true)
     }
 
     /** Instrucciones del planeta solo en la primera pregunta; después, una frase corta de ánimo. */
@@ -356,7 +392,7 @@ class Game(context: Context) {
         tone(523, 659, 784)
         haptics.right()
         // Si Marty habla, ya dice la palabra en su felicitación; si no, se dicta la palabra sola.
-        if (!quiet && !speech.hostOn) speak(s.word.text)
+        if (!quiet && !(speech.hostOn && chatty)) speak(s.word.text)
         say(Frases.acierto(s.word.text))
         celebrate(false)
         later(s, 1500)

@@ -323,6 +323,8 @@ fun HostBar(g: Game) {
         pop.animateTo(1f, androidx.compose.animation.core.spring(dampingRatio = .45f, stiffness = 500f))
     }
     Row(verticalAlignment = Alignment.CenterVertically, horizontalArrangement = Arrangement.spacedBy(12.dp)) {
+      // Se puede tocar a Marty para que hable (un globito pequeño lo indica).
+      Box(Modifier.tap { g.tapHost() }) {
         Canvas(
             Modifier.size(84.dp).graphicsLayer {
                 val p = act.value
@@ -349,6 +351,15 @@ fun HostBar(g: Game) {
         ) {
             group(s = size.width / 100f) { if (borron) borron(t, g.mood, talking) else martyBust(t, g.mood, talking) }
         }
+        if (!talking && !borron) {
+            val s = 1f + .12f * swing(t, .9f)
+            Box(
+                Modifier.align(Alignment.BottomEnd).graphicsLayer { scaleX = s; scaleY = s }.size(26.dp)
+                    .clip(androidx.compose.foundation.shape.CircleShape).background(C.sun).border(2.dp, Ink, androidx.compose.foundation.shape.CircleShape),
+                contentAlignment = Alignment.Center,
+            ) { Text("💬", style = body(12)) }
+        }
+      }
         // Globo de diálogo con colita apuntando al personaje
         val accent = if (borron) C.berry else C.sun
         Box(
@@ -363,7 +374,7 @@ fun HostBar(g: Game) {
                     close()
                 }
                 drawPath(tail, accent.copy(alpha = .7f), style = androidx.compose.ui.graphics.drawscope.Stroke(4.dp.toPx(), join = androidx.compose.ui.graphics.StrokeJoin.Round))
-                drawPath(tail, Color(0xFF2E2580))
+                drawPath(tail, C.card)
             }
         ) {
             val shape = RoundedCornerShape(20.dp)

@@ -22,7 +22,11 @@ sealed interface Parte {
  * [kind]: tipo de comentario (para no repetirlo seguido ni decirlo dos veces en pocos segundos).
  * [voice]: false = solo se muestra en el globo (comentarios de cada letra, que serían repetitivos).
  */
-data class Line(val text: String, val who: Who, val parts: List<Parte>, val kind: String? = null, val voice: Boolean = true)
+/**
+ * Una frase de Marty o Borrón. [chat] = comentario de una jugada ("¡Casi!", "¡Otra palabra!"): por defecto
+ * solo aparece escrito en el globo (para que Marty no hable todo el rato); se escucha si se toca a Marty.
+ */
+data class Line(val text: String, val who: Who, val parts: List<Parte>, val kind: String? = null, val voice: Boolean = true, val chat: Boolean = false)
 
 /** Nombre del archivo de una frase grabada: assets/voz/f/<crc32 del texto>.m4a */
 fun fraseArchivo(texto: String): String {
@@ -45,7 +49,7 @@ object Frases {
 
     /** Varias formas de decir lo mismo: se elige una distinta cada vez. */
     private fun grupo(kind: String, vararg textos: String, borron: Boolean = false, voz: Boolean = true): List<Line> =
-        textos.map { t -> reg(t, borron).let { Line(t, if (borron) Who.BORRON else Who.MARTY, listOf(it), kind, voz) } }
+        textos.map { t -> reg(t, borron).let { Line(t, if (borron) Who.BORRON else Who.MARTY, listOf(it), kind, voz, chat = true) } }
 
     private val ultima = HashMap<String, String>()
 
@@ -62,8 +66,26 @@ object Frases {
     /* ---------- Menús ---------- */
     val BIENVENIDA = marty("¡Bienvenido al concurso galáctico! ¡Soy Marty, tu presentador! ¡Vamos, vamos, vamos!")
     private val HOLA_DE_NUEVO = reg("¡Hola! ¿A qué planeta vamos hoy?")
-    fun hola(nombre: String) = Line("¡Hola, $nombre! ¿A qué planeta vamos hoy?", Who.MARTY, listOf(HOLA_DE_NUEVO))
-    val ELIGE_PLANETA = marty("Elige un planeta. Aquí no hay prisa: practica lo que quieras.")
+    fun hola(nombre: String) = Line("¡Hola, $nombre! ¿A qué planeta vamos hoy?", Who.MARTY, listOf(HOLA_DE_NUEVO), chat = true)
+    val ELIGE_PLANETA = marty("Elige un planeta. Aquí no hay prisa: practica lo que quieras.").copy(chat = true)
+
+    /** Lo que cuenta Marty cuando lo tocas: datos curiosos de ortografía, chistes y ánimos. */
+    private val CHARLA = grupo(
+        "charla",
+        "¿Sabías que la eñe es una letra que casi solo existe en español?",
+        "¡Ji, ji! ¡Me haces cosquillas!",
+        "Un truco: si la palabra termina en ene, ese o vocal y suena fuerte al final, lleva tilde. Como camión.",
+        "¿Sabes por qué las letras nunca se pierden? ¡Porque siempre siguen el abecedario!",
+        "La diéresis son los dos puntitos sobre la u. Hacen que suene, como en pingüino.",
+        "¡Eres el mejor concursante de toda la galaxia!",
+        "En mi planeta las palabras flotan. ¡Hay que atraparlas con red!",
+        "¿Qué le dijo la be a la uve? ¡Suenas igualito que yo!",
+        "Leer un ratito cada día te hace un campeón de las palabras.",
+        "¡Equivocarse está bien! Así es como aprende el cerebro.",
+        "La hache es muy tímida: está en las palabras, pero no hace ningún sonido.",
+        "¡Vamos, vamos, vamos! ¡A jugar!",
+    )
+    fun charla() = pick(CHARLA)
     val NOMBRE = marty("¿Cómo te llamas, astronauta? Tu nombre irá en el diploma.")
     val VOZ = marty("Elige la voz que mejor se entienda. Toca \"Probar\" para escucharla.")
     val SOY_MARTY = marty("¡Hola! Soy Marty, tu presentador. ¡Vamos a jugar con las palabras!")
@@ -141,7 +163,7 @@ object Frases {
         "¡Perfecto!", "¡Increíble!", "¡Así se hace!",
     ).map { reg(it) }
     fun acierto(palabra: String): Line =
-        sinRepetir("felicita", FELICITA) { it.texto }.let { Line("${it.texto} $palabra", Who.MARTY, listOf(it, Parte.Palabra(palabra))) }
+        sinRepetir("felicita", FELICITA) { it.texto }.let { Line("${it.texto} $palabra", Who.MARTY, listOf(it, Parte.Palabra(palabra)), chat = true) }
 
     private val SE_ESCRIBE = reg("Se escribe")
     private val SIGAMOS = reg("¡Sigamos!")
