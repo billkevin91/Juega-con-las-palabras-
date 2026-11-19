@@ -20,7 +20,6 @@ import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.graphics.drawscope.withTransform
 import androidx.compose.ui.graphics.isSpecified
 import androidx.compose.ui.graphics.lerp as colorLerp
-import androidx.compose.ui.graphics.toComposePathEffect
 import androidx.compose.ui.graphics.asImageBitmap
 import androidx.compose.ui.graphics.vector.PathParser
 import androidx.compose.ui.text.TextMeasurer
@@ -52,12 +51,8 @@ object Paths {
         if (d.contains('E') || d.contains('e')) d.replace(EXP) { java.math.BigDecimal(it.value).toPlainString() } else d
 }
 
-/**
- * Trazo a mano: el contorno tiembla un poquito (como tinta sobre papel) en vez de ser una línea perfecta.
- * El temblor es siempre el mismo para cada forma, así no "hierve" entre cuadros.
- */
-private val HAND = android.graphics.DiscretePathEffect(7f, 1.1f).toComposePathEffect()
-private fun outline(sw: Float) = Stroke(sw * 1.25f, cap = StrokeCap.Round, join = StrokeJoin.Round, pathEffect = HAND)
+/** Contorno limpio, con puntas y uniones redondas (como un buen dibujo a tinta). */
+private fun outline(sw: Float) = Stroke(sw, cap = StrokeCap.Round, join = StrokeJoin.Round)
 
 /** Grano de papel: una textura de puntitos que se repite, para que las escenas parezcan impresas. */
 val PaperGrain: androidx.compose.ui.graphics.ShaderBrush by lazy {
@@ -99,12 +94,12 @@ private data class RadKey(val c: ULong, val rx: Float, val ry: Float)
 private data class PathKey(val c: ULong, val d: String)
 
 private fun linear(c: Color, h: Float) = Shade.brush(LinKey(c.value, h)) {
-    Brush.verticalGradient(*cel(c, .64f), startY = 0f, endY = h)
+    Brush.verticalGradient(*cel(c, .72f), startY = 0f, endY = h)
 }
 
 /** Color plano hasta [at] y sombra de un tono desde ahí, con corte nítido. */
 private fun cel(c: Color, at: Float): Array<Pair<Float, Color>> {
-    val d = Shade.dark(c, .2f)
+    val d = Shade.dark(c, .13f)
     return arrayOf(0f to c, at to c, at to d, 1f to d)
 }
 
@@ -122,7 +117,7 @@ fun DrawScope.path(
         val b = Paths.boundsOf(d)
         if (Shade.applies(fill, alpha, b.height)) {
             val br = Shade.brush(PathKey(fill.value, d)) {
-                Brush.verticalGradient(*cel(fill, .64f), startY = b.top, endY = b.bottom)
+                Brush.verticalGradient(*cel(fill, .72f), startY = b.top, endY = b.bottom)
             }
             drawPath(p, br, alpha)
         } else drawPath(p, fill, alpha)
