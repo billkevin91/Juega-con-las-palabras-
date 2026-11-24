@@ -104,6 +104,11 @@ class Save(context: Context) {
         get() = p.getBoolean("chatty", false)
         set(v) = p.edit().putBoolean("chatty", v).apply()
 
+    /** true = Marty usa su voz grabada; false = usa la voz del teléfono que se eligió en "Voz de Marty". */
+    var recordedVoice: Boolean
+        get() = p.getBoolean("recordedVoice", true)
+        set(v) = p.edit().putBoolean("recordedVoice", v).apply()
+
     fun best(k: String) = p.getInt("best_$k", 0)
     fun setBest(k: String, v: Int) = p.edit().putInt("best_$k", v).apply()
 }
@@ -299,12 +304,16 @@ class Game(context: Context) {
 
     private var cineThen: (() -> Unit)? = null
 
+    /** Escenas ya vistas desde que se abrió la app (las de Borrón no se repiten en cada partida). */
+    private val seenCine = mutableSetOf<Escena>()
+
     /** Muestra una escena animada y, al terminar (o al tocar "Saltar"), hace [then]. */
     fun cine(kind: Escena, title: String, arg: String = "", then: () -> Unit) {
         session = null
         speech.stop()
         this.title = title
         cineThen = then
+        seenCine += kind
         screen = Screen.Cine(kind, arg)
     }
 
@@ -449,7 +458,13 @@ class Game(context: Context) {
     /* ---------- Ataque de las palabras ---------- */
 
     /** Antes del ataque, Borrón aparece en una escena animada. */
-    fun attack() = cine(Escena.BORRON_LLEGA, "¡Alerta de tinta!") { attackStart() }
+    fun attack() {
+        // La escena de Borrón solo la primera vez que se abre el Ataque; después, directo al juego.
+        if (Escena.BORRON_LLEGA in seenCine) {
+            attackStart()
+            say(Frases.ATAQUE_INICIO)
+        } else cine(Escena.BORRON_LLEGA, "¡Alerta de tinta!") { attackStart() }
+    }
 
     private fun attackStart() {
         session = null
@@ -469,8 +484,8 @@ class Game(context: Context) {
         } else tone(300, 260)
         val end = Screen.AttackEnd(score, ok, rec)
         // Si ganaste, Marty sale a perseguir a Borrón con un borrador gigante.
-        if (ok >= 7) return cine(Escena.BORRON_HUYE, "¡Fuera, Borrón!") { title = "Ataque de las palabras"; screen = end }
-        say(Frases.ATAQUE_PERDISTE)
+        if (ok >= 7 && Escena.BORRON_HUYE !in seenCine) return cine(Escena.BORRON_HUYE, "¡Fuera, Borrón!") { title = "Ataque de las palabras"; screen = end }
+        say(if (ok >= 7) Frases.ATAQUE_GANASTE else Frases.ATAQUE_PERDISTE)
         screen = end
     }
 }

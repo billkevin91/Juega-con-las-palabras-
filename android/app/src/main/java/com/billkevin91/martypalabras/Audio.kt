@@ -249,12 +249,27 @@ class Speech(context: Context, private val save: Save) {
         return "$where · $quality$net"
     }
 
+    /**
+     * Elegir una voz del teléfono: desde ese momento Marty habla con ella (en vez de sus grabaciones),
+     * con un tono un poco más agudo para que siga sonando como Marty.
+     */
     fun choose(id: String) {
         val v = try { tts.voices.orEmpty().firstOrNull { it.name == id } } catch (_: Exception) { null } ?: return
         if (tts.setVoice(v) == TextToSpeech.SUCCESS) {
             current = id
             save.voice = id
+            recorded = false
+            save.recordedVoice = false
         }
+    }
+
+    /** true = voz grabada de Marty (la recomendada); false = voz del teléfono elegida. */
+    var recorded by mutableStateOf(save.recordedVoice)
+        private set
+
+    fun useRecorded() {
+        recorded = true
+        save.recordedVoice = true
     }
 
     /** Frases grabadas disponibles (assets/voz/f/<crc32>.m4a). */
@@ -338,7 +353,7 @@ class Speech(context: Context, private val save: Save) {
                 is Parte.Palabra -> recordingFor(p.texto)
             }
         }
-        if (l.parts.isNotEmpty() && files.all { it != null }) {
+        if (recorded && l.parts.isNotEmpty() && files.all { it != null }) {
             if (ready) tts.stop()
             pendingWord = null
             playChain(files.filterNotNull())
@@ -370,7 +385,7 @@ class Speech(context: Context, private val save: Save) {
             pendingWord = text
             return
         }
-        recordingFor(text)?.let { file ->
+        if (recorded) recordingFor(text)?.let { file ->
             playChain(listOf(file))
             return
         }

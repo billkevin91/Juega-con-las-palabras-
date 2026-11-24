@@ -392,16 +392,36 @@ fun VoiceScreen(g: Game) {
                 ) { Text(label, style = display(17, if (on) C.onColor else C.ink)) }
             }
         }
-        Text("Voces en español de este teléfono", style = display(19), textAlign = TextAlign.Center)
+        Text("Elige la voz", style = display(19), textAlign = TextAlign.Center)
+        // Primera opción: la voz grabada de Marty (natural, funciona sin internet).
+        run {
+            val on = sp.recorded
+            val s = RoundedCornerShape(18.dp)
+            Row(
+                Modifier.fillMaxWidth().clip(s).background(if (on) C.space2 else C.card).border(if (on) 3.dp else 2.dp, if (on) C.leaf else C.line, s)
+                    .tap { sp.useRecorded(); g.say(Frases.SOY_MARTY, force = true) }.padding(12.dp),
+                verticalAlignment = Alignment.CenterVertically,
+                horizontalArrangement = Arrangement.spacedBy(10.dp),
+            ) {
+                Box(Modifier.size(22.dp).clip(RoundedCornerShape(50)).border(3.dp, if (on) C.leaf else C.muted, RoundedCornerShape(50)), contentAlignment = Alignment.Center) {
+                    if (on) Box(Modifier.size(10.dp).clip(RoundedCornerShape(50)).background(C.leaf))
+                }
+                Column(Modifier.weight(1f)) {
+                    Text("Voz de Marty (grabada)", style = display(18))
+                    Text("Recomendada · natural y sin internet", style = body(14, C.muted))
+                }
+            }
+        }
+        Text("O una voz de este teléfono:", style = body(15, C.muted), textAlign = TextAlign.Center)
         if (sp.options.isEmpty()) {
             Hint(if (sp.ready) "Este teléfono no muestra la lista de voces; se usa la voz en español predeterminada." else "No se encontró ninguna voz en español. Instala una con el botón de abajo.")
         }
         sp.options.forEach { v ->
-            val on = v.id == sp.current
+            val on = !sp.recorded && v.id == sp.current
             val s = RoundedCornerShape(18.dp)
             Row(
                 Modifier.fillMaxWidth().clip(s).background(if (on) C.space2 else C.card).border(if (on) 3.dp else 2.dp, if (on) C.leaf else C.line, s)
-                    .tap { sp.choose(v.id); g.speak("Hola, soy Marty. Árbol, pingüino, murciélago.") }.padding(12.dp),
+                    .tap { sp.choose(v.id); g.say(Frases.SOY_MARTY, force = true) }.padding(12.dp),
                 verticalAlignment = Alignment.CenterVertically,
                 horizontalArrangement = Arrangement.spacedBy(10.dp),
             ) {
@@ -412,7 +432,7 @@ fun VoiceScreen(g: Game) {
                     Text(v.label, style = display(18))
                     Text(v.detail, style = body(14, C.muted))
                 }
-                Ghost("Probar", icon = { SpeakerIcon() }) { sp.choose(v.id); g.speak("Hola, soy Marty. Árbol, pingüino, murciélago.") }
+                Ghost("Probar", icon = { SpeakerIcon() }) { sp.choose(v.id); g.say(Frases.SOY_MARTY, force = true) }
             }
         }
         Hint("Consejo: las voces \"en línea\" son las más naturales y la app las usa cuando hay internet. Si todas suenan robóticas, instala las voces de Google (Speech Services by Google) y descarga la voz en español.")
