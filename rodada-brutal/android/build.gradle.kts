@@ -1,6 +1,6 @@
 plugins {
-    id("com.android.application")
-    id("org.jetbrains.kotlin.android")
+    id("com.android.application") version "8.7.3"
+    id("org.jetbrains.kotlin.android") version "2.0.21"
 }
 
 val gdxVersion = "1.12.1"
@@ -50,5 +50,4 @@ dependencies {
     implementation("com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-arm64-v8a")
     implementation("com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86")
     implementation("com.badlogicgames.gdx:gdx-box2d-platform:$gdxVersion:natives-x86_64")
-    implementation("androidx.appcompat:appcompat:1.7.0")
 }
